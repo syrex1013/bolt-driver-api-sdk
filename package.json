@@ -1,0 +1,75 @@
+{
+  "name": "bolt-driver-api",
+  "version": "1.0.0",
+  "description": "Official Node.js SDK for Bolt Driver API - communicate with Bolt's driver platform like the mobile app",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watchAll",
+    "test": "jest",
+    "test:watch": "jest --watchAll",
+    "test:coverage": "jest --coverage",
+    "lint": "eslint src/**/*.ts",
+    "lint:fix": "eslint src/**/*.ts --fix",
+    "clean": "rm -rf dist",
+    "prepublishOnly": "npm run clean && npm run build",
+    "examples": "ts-node examples/index.ts",
+    "examples:auth": "ts-node examples/auth.ts",
+    "examples:cli": "ts-node examples/cli.ts",
+    "examples:enhanced": "ts-node examples/enhanced.ts",
+    "examples:magic-link": "ts-node examples/magic-link-example.ts",
+    "test:magic-link": "ts-node examples/test-magic-link.ts",
+    "test:magic-link-simple": "ts-node examples/test-magic-link-simple.ts"
+  },
+  "keywords": [
+    "bolt",
+    "driver",
+    "api",
+    "ride-sharing",
+    "taxi",
+    "transportation",
+    "sdk",
+    "nodejs",
+    "typescript"
+  ],
+  "author": "Your Name <your.email@example.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/bolt-driver-api.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yourusername/bolt-driver-api/issues"
+  },
+  "homepage": "https://github.com/yourusername/bolt-driver-api#readme",
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "dependencies": {
+    "axios": "^1.6.0",
+    "uuid": "^9.0.1"
+  },
+  "devDependencies": {
+    "@types/inquirer": "^9.0.9",
+    "@types/jest": "^29.5.5",
+    "@types/node": "^20.8.0",
+    "@types/uuid": "^9.0.6",
+    "@typescript-eslint/eslint-plugin": "^6.21.0",
+    "@typescript-eslint/parser": "^6.9.0",
+    "boxen": "^8.0.1",
+    "chalk": "^5.6.0",
+    "eslint": "^8.52.0",
+    "inquirer": "^12.9.3",
+    "jest": "^29.7.0",
+    "ora": "^8.2.0",
+    "ts-jest": "^29.1.1",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.2.2"
+  },
+  "files": [
+    "dist/**/*",
+    "README.md",
+    "LICENSE"
+  ]
+}
