@@ -81,7 +81,23 @@ async function magicLinkExample() {
   // Check for stored token
   if (await tokenStorage.hasValidToken()) {
     console.log('\n🔑 Found stored token - proceeding with authenticated requests');
-    await demonstrateApiMethods(boltAPI);
+    
+    // Validate the stored token first
+    try {
+      const isValid = await boltAPI.validateExistingToken();
+      if (isValid) {
+        console.log(chalk.green('✅ Stored token is valid'));
+        await demonstrateApiMethods(boltAPI);
+      } else {
+        console.log(chalk.yellow('⚠️ Stored token is invalid or expired'));
+        console.log(chalk.blue('🔄 Proceeding with re-authentication...'));
+        await performMagicLinkAuthentication(boltAPI, userInput['email'], deviceInfo);
+      }
+    } catch (error) {
+      console.log(chalk.red('❌ Error validating stored token'));
+      console.log(chalk.blue('🔄 Proceeding with re-authentication...'));
+      await performMagicLinkAuthentication(boltAPI, userInput['email'], deviceInfo);
+    }
   } else {
     console.log('\n🔑 No stored token found - proceeding with magic link authentication');
     await performMagicLinkAuthentication(boltAPI, userInput['email'], deviceInfo);
@@ -93,16 +109,16 @@ async function performMagicLinkAuthentication(boltAPI: BoltDriverAPI, email: str
   
   try {
     // Send magic link
-    const magicLinkResponse = await boltAPI.sendMagicLink(email);
+    await boltAPI.sendMagicLink(email);
     spinner.succeed('Magic link sent successfully!');
     
     console.log('\n📧 Magic Link Sent:');
     console.log(`   Email: ${email}`);
-    console.log(`   Response: ${magicLinkResponse.message}`);
+    console.log('   Please check your email and copy the magic link URL.');
     
     // Wait for user to paste the magic link
-    console.log('\n⏳ Please check your email and copy the magic link.');
-    console.log('   You will need to paste it in the next step.');
+    console.log('\n⏳ Waiting for magic link input...');
+    console.log('   You will need to paste the complete URL in the next step.');
     
     const { magicLinkUrl } = await inquirer.prompt([
       {
@@ -125,63 +141,185 @@ async function performMagicLinkAuthentication(boltAPI: BoltDriverAPI, email: str
     const token = BoltDriverAPI.extractTokenFromMagicLink(magicLinkUrl);
     console.log(chalk.green(`✓ Token extracted: ${token.substring(0, 20)}...`));
 
-    try {
-      // Authenticate with the magic link token
-      console.log(chalk.blue('🔐 Authenticating with magic link...'));
+    // Authenticate with the magic link token
+    console.log(chalk.blue('🔐 Authenticating with magic link...'));
+    
+    // Create GPS info for authentication
+    const gpsInfo = createSampleGpsInfo();
+    
+    const authResponse = await boltAPI.authenticateWithMagicLink(token, deviceInfo, gpsInfo);
+    
+    if (authResponse.code === 0 && authResponse.data.refresh_token) {
+      console.log(chalk.green('✓ Authentication successful!'));
+      console.log(chalk.gray(`Refresh token: ${authResponse.data.refresh_token.substring(0, 20)}...`));
       
-      // Create GPS info for authentication
-      const gpsInfo = createSampleGpsInfo();
+      // Debug: Check authentication state
+      console.log(chalk.blue('🔍 Checking authentication state...'));
+      console.log(chalk.gray(`Access Token: ${boltAPI.getCurrentAccessToken() ? 'Set' : 'Not set'}`));
+      console.log(chalk.gray(`Refresh Token: ${boltAPI.getCurrentRefreshToken() ? 'Set' : 'Not set'}`));
+      console.log(chalk.gray(`Is Authenticated: ${boltAPI.isAuthenticated() ? 'Yes' : 'No'}`));
       
-      const authResponse = await boltAPI.authenticateWithMagicLink(token, deviceInfo, gpsInfo);
+      // Now we can make authenticated API calls
+      console.log(chalk.blue('📱 Getting driver navigation bar badges...'));
+      const badges = await boltAPI.getDriverNavBarBadges(gpsInfo);
+      console.log(chalk.green('✓ Navigation bar badges retrieved:'), badges);
       
-      if (authResponse.code === 0) {
-        console.log(chalk.green('✓ Authentication successful!'));
-        console.log(chalk.gray(`Refresh token: ${authResponse.data.refresh_token.substring(0, 20)}...`));
-        
-        // Debug: Check authentication state
-        console.log(chalk.blue('🔍 Checking authentication state...'));
-        console.log(chalk.gray(`Access Token: ${boltAPI.getCurrentAccessToken() ? 'Set' : 'Not set'}`));
-        console.log(chalk.gray(`Refresh Token: ${boltAPI.getCurrentRefreshToken() ? 'Set' : 'Not set'}`));
-        console.log(chalk.gray(`Is Authenticated: ${boltAPI.isAuthenticated() ? 'Yes' : 'No'}`));
-        
-        // Now we can make authenticated API calls
-        console.log(chalk.blue('📱 Getting driver navigation bar badges...'));
-        const badges = await boltAPI.getDriverNavBarBadges(gpsInfo);
-        console.log(chalk.green('✓ Navigation bar badges retrieved:'), badges);
-        
-        // Get driver state
-        console.log(chalk.blue('🚗 Getting driver state...'));
-        const driverState = await boltAPI.getDriverState(gpsInfo);
-        console.log(chalk.green('✓ Driver state retrieved:'), driverState);
-        
-        // Get working time info
-        console.log(chalk.blue('⏰ Getting working time information...'));
-        const workingTime = await boltAPI.getWorkingTimeInfo(gpsInfo);
-        console.log(chalk.green('✓ Working time info retrieved:'), workingTime);
-        
-      } else {
-        console.log(chalk.red('✗ Authentication failed:'), authResponse.message);
-      }
-    } catch (error) {
-      console.error(chalk.red('✗ Error during authentication:'), error);
+      // Get driver state
+      console.log(chalk.blue('🚗 Getting driver state...'));
+      const driverState = await boltAPI.getDriverState(gpsInfo);
+      console.log(chalk.green('✓ Driver state retrieved:'), driverState);
+      
+      // Get working time info
+      console.log(chalk.blue('⏰ Getting working time information...'));
+      const workingTime = await boltAPI.getWorkingTimeInfo(gpsInfo);
+      console.log(chalk.green('✓ Working time info retrieved:'), workingTime);
+      
+    } else {
+      console.log(chalk.red('✗ Authentication failed:'), authResponse.message);
+      throw new Error(`Authentication failed: ${authResponse.message}`);
     }
     
   } catch (error) {
-    spinner.fail('Magic link sending failed');
+    spinner.fail('Magic link authentication failed');
     console.error('\n❌ Error:', error);
-    process.exit(1);
+    
+    // Ask user if they want to try a different method
+    const { tryDifferentMethod } = await inquirer.prompt([
+      {
+        type: 'confirm',
+        name: 'tryDifferentMethod',
+        message: 'Would you like to try phone authentication instead?',
+        default: true
+      }
+    ]);
+    
+    if (tryDifferentMethod) {
+      await performPhoneAuthentication(boltAPI, deviceInfo);
+    } else {
+      console.log(chalk.yellow('Authentication cancelled. Exiting...'));
+      process.exit(1);
+    }
+  }
+}
+
+async function performPhoneAuthentication(boltAPI: BoltDriverAPI, deviceInfo: DeviceInfo) {
+  console.log(chalk.blue('\n📱 Switching to Phone Authentication...'));
+  
+  const { phoneNumber } = await inquirer.prompt([
+    {
+      type: 'input',
+      name: 'phoneNumber',
+      message: 'Enter your phone number (with country code):',
+      default: '+48123456789',
+      validate: (input: string) => {
+        if (input.startsWith('+') && input.length >= 10) {
+          return true;
+        }
+        return 'Please enter a valid phone number with country code (e.g., +48123456789)';
+      }
+    }
+  ]);
+  
+  const spinner = ora('Sending SMS verification code...').start();
+  
+  try {
+    // Start phone authentication
+    await boltAPI.startAuthentication(
+      {
+        authMethod: 'phone',
+        brand: 'bolt',
+        country: 'pl',
+        language: 'en-GB',
+        theme: 'dark'
+      },
+      deviceInfo,
+      {
+        driver_id: 'test_driver_id',
+        session_id: 'test_session_id'
+      }
+    );
+    
+    spinner.succeed(`SMS sent to ${phoneNumber}`);
+    console.log(chalk.yellow(`📨 SMS verification code sent to ${phoneNumber}`));
+    
+    // Wait for user to input SMS code
+    console.log('\n⏳ Waiting for SMS code input...');
+    console.log('   Please check your phone for the verification code.');
+    
+    const { smsCode } = await inquirer.prompt([
+      {
+        type: 'input',
+        name: 'smsCode',
+        message: 'Enter the 6-digit SMS verification code:',
+        validate: (input: string) => {
+          if (input.length === 6 && /^\d+$/.test(input)) {
+            return true;
+          }
+          return 'Please enter a valid 6-digit SMS code';
+        }
+      }
+    ]);
+    
+    // Confirm authentication with SMS code
+    spinner.start('Verifying SMS code...');
+    const confirmAuthResponse = await boltAPI.confirmAuthentication(
+      {
+        authMethod: 'phone',
+        brand: 'bolt',
+        country: 'pl',
+        language: 'en-GB',
+        theme: 'dark'
+      },
+      deviceInfo,
+      {
+        driver_id: 'test_driver_id',
+        session_id: 'test_session_id'
+      },
+      smsCode
+    );
+    
+    spinner.succeed('SMS code verified successfully!');
+    
+    if (confirmAuthResponse.token && confirmAuthResponse.token.refresh_token) {
+      console.log(chalk.green('✓ Phone authentication successful!'));
+      console.log(chalk.gray(`Refresh token: ${confirmAuthResponse.token.refresh_token.substring(0, 20)}...`));
+      
+      // Debug: Check authentication state
+      console.log(chalk.blue('🔍 Checking authentication state...'));
+      console.log(chalk.gray(`Access Token: ${boltAPI.getCurrentAccessToken() ? 'Set' : 'Not set'}`));
+      console.log(chalk.gray(`Refresh Token: ${boltAPI.getCurrentRefreshToken() ? 'Set' : 'Not set'}`));
+      console.log(chalk.gray(`Is Authenticated: ${boltAPI.isAuthenticated() ? 'Yes' : 'No'}`));
+      
+      // Now we can make authenticated API calls
+      const gpsInfo = createSampleGpsInfo();
+      console.log(chalk.blue('📱 Getting driver navigation bar badges...'));
+      const badges = await boltAPI.getDriverNavBarBadges(gpsInfo);
+      console.log(chalk.green('✓ Navigation bar badges retrieved:'), badges);
+      
+    } else {
+      throw new Error('Phone authentication failed - no token received');
+    }
+    
+  } catch (error) {
+    spinner.fail('Phone authentication failed');
+    console.error('\n❌ Error:', error);
+    throw error;
   }
 }
 
 async function demonstrateApiMethods(boltAPI: BoltDriverAPI) {
+  // Check authentication status first
+  if (!boltAPI.isAuthenticated()) {
+    console.log(chalk.red('❌ Not authenticated. Cannot demonstrate API methods.'));
+    console.log(chalk.yellow('💡 Please complete authentication first.'));
+    return;
+  }
+  
   console.log('\n🚀 Demonstrating New API Endpoints...\n');
   
   // Create sample GPS info
   const gpsInfo = createSampleGpsInfo();
   
-  // Remove the previous results array
-  // const results: Array<{ name: string; status: string; data?: any; error?: string }> = [];
-
   // Test all new endpoints
   const endpoints = [
     { 
@@ -240,7 +378,50 @@ async function demonstrateApiMethods(boltAPI: BoltDriverAPI) {
       console.log(`📦 ${endpoint.name} Response:\n${endpoint.logResult(data)}\n`);
     } catch (error) {
       spinner.fail(`${endpoint.name} - Failed`);
-      console.log(`❌ ${endpoint.name} Error: ${error instanceof Error ? error.message : 'Unknown error'}\n`);
+      
+      // Handle 503 unauthorized errors specifically
+      if (error instanceof Error && error.message.includes('503')) {
+        console.log(`❌ ${endpoint.name} Error: 503 Unauthorized - Token may be invalid`);
+        console.log(`💡 This usually means the stored token has expired or is invalid.`);
+        console.log(`🔐 You may need to re-authenticate using OTP or magic link.\n`);
+        
+        // Ask user if they want to re-authenticate
+        const { reauth } = await inquirer.prompt([
+          {
+            type: 'confirm',
+            name: 'reauth',
+            message: 'Would you like to re-authenticate now?',
+            default: true
+          }
+        ]);
+        
+        if (reauth) {
+          console.log(chalk.blue('🔄 Initiating re-authentication...'));
+          // Get email from user for magic link
+          const { email } = await inquirer.prompt([
+            {
+              type: 'input',
+              name: 'email',
+              message: 'Enter your email for magic link authentication:',
+              validate: (input: string) => {
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                return emailRegex.test(input) ? true : 'Please enter a valid email address';
+              }
+            }
+          ]);
+          
+          await performMagicLinkAuthentication(boltAPI, email, {
+            deviceId: 'example-device-id',
+            deviceType: 'iphone',
+            deviceName: 'iPhone17,3',
+            deviceOsVersion: 'iOS18.6',
+            appVersion: 'DI.116.0'
+          });
+          return; // Exit the demonstration to allow re-authentication
+        }
+      } else {
+        console.log(`❌ ${endpoint.name} Error: ${error instanceof Error ? error.message : 'Unknown error'}\n`);
+      }
     }
   }
 

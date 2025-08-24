@@ -160,7 +160,26 @@ describe('BoltDriverAPI', () => {
       const axios = require('axios');
       axios.post.mockRejectedValue(networkError);
 
-      await expect(boltAPI.startAuthentication('+48123456789')).rejects.toThrow('Failed to start authentication: Network error');
+      await expect(boltAPI.startAuthentication(
+        {
+          authMethod: 'phone',
+          brand: 'bolt',
+          country: 'pl',
+          language: 'en-GB',
+          theme: 'dark'
+        },
+        {
+          deviceId: 'test-device-id',
+          deviceType: 'iphone',
+          deviceName: 'iPhone17,3',
+          deviceOsVersion: 'iOS18.6',
+          appVersion: 'DI.116.0'
+        },
+        {
+          driver_id: 'test_driver_id',
+          session_id: 'test_session_id'
+        }
+      )).rejects.toThrow('Failed to start authentication: Network error');
     });
   });
 

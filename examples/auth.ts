@@ -4,7 +4,9 @@ import inquirer from 'inquirer';
 import chalk from 'chalk';
 import ora from 'ora';
 import boxen from 'boxen';
-import { BoltDriverAPI, DeviceInfo, AuthConfig } from '../src';
+import * as fs from 'fs';
+import * as path from 'path';
+import { BoltDriverAPI, DeviceInfo, AuthConfig, SmsLimitError, InvalidSmsCodeError, InvalidPhoneError, DatabaseError } from '../src';
 
 interface UserInput {
   phoneNumber: string;
@@ -29,15 +31,53 @@ async function authExample() {
     borderColor: 'blue'
   }));
 
-  // Get user input
-  const userInput = await getUserInput();
+  // Check for saved token first
+  const tokenPath = path.join(__dirname, '..', '.magic-link-token.json');
+  let savedToken = null;
+
+  try {
+    if (fs.existsSync(tokenPath)) {
+      const tokenData = JSON.parse(fs.readFileSync(tokenPath, 'utf8'));
+      if (tokenData && tokenData.phoneNumber) {
+        const { useSaved } = await inquirer.prompt([
+          {
+            type: 'confirm',
+            name: 'useSaved',
+            message: `Found saved credentials for ${tokenData.phoneNumber}. Use saved token?`,
+            default: true
+          }
+        ]);
+
+        if (useSaved) {
+          savedToken = tokenData;
+        }
+      }
+    }
+  } catch (error) {
+    console.log(chalk.yellow('Could not read saved token file'));
+  }
+
+  let userInput: UserInput;
+
+  if (savedToken) {
+    userInput = {
+      phoneNumber: savedToken.phoneNumber,
+      country: savedToken.country || 'pl',
+      language: savedToken.language || 'en-GB',
+      deviceType: savedToken.deviceType || 'iphone',
+      useRealCredentials: true
+    };
+    console.log(chalk.green(`✅ Using saved credentials for ${savedToken.phoneNumber}`));
+  } else {
+    userInput = await getUserInput();
+  }
 
   // Device information
   const deviceInfo: DeviceInfo = {
-    deviceId: generateDeviceId(),
+    deviceId: savedToken?.deviceId || generateDeviceId(),
     deviceType: userInput.deviceType as 'iphone' | 'android',
-    deviceName: userInput.deviceType === 'iphone' ? 'iPhone17,3' : 'Samsung Galaxy S24',
-    deviceOsVersion: userInput.deviceType === 'iphone' ? 'iOS18.6' : 'Android 14',
+    deviceName: savedToken?.deviceName || (userInput.deviceType === 'iphone' ? 'iPhone17,3' : 'Samsung Galaxy S24'),
+    deviceOsVersion: savedToken?.deviceOsVersion || (userInput.deviceType === 'iphone' ? 'iOS18.6' : 'Android 14'),
     appVersion: 'DI.116.0'
   };
 
@@ -62,13 +102,20 @@ async function authExample() {
     const boltAPI = new BoltDriverAPI(deviceInfo, authConfig);
     spinner.succeed(chalk.green('API initialized successfully'));
 
+    // Check if we already have a valid token
+    if (savedToken && boltAPI.isAuthenticated()) {
+      console.log(chalk.green('\n✅ Already authenticated with valid token'));
+      await showAuthSuccess(boltAPI);
+      return;
+    }
+
     // Test network connectivity
     if (userInput.useRealCredentials) {
       spinner.start('Testing network connectivity to Bolt servers...');
       try {
         // Simple connectivity test
         const testUrl = 'https://driver.live.boltsvc.net';
-        const response = await fetch(testUrl, { 
+        const response = await fetch(testUrl, {
           method: 'HEAD',
           signal: AbortSignal.timeout(10000) // 10 second timeout
         });
@@ -86,29 +133,42 @@ async function authExample() {
       }
     }
 
-    // Step 1: Start authentication
-    spinner.start(`Sending SMS to ${userInput.phoneNumber}...`);
-    
-    // Validate phone number format
-    if (userInput.useRealCredentials) {
-      const phoneRegex = /^\+[1-9]\d{1,14}$/;
-      if (!phoneRegex.test(userInput.phoneNumber)) {
-        throw new Error(`Invalid phone number format: ${userInput.phoneNumber}. Must be in international format (e.g., +48123456789)`);
-      }
-      
-      // Check if it's a known demo number
-      const demoNumbers = ['+48123456789', '+1234567890', '+0000000000'];
-      if (demoNumbers.includes(userInput.phoneNumber)) {
-        console.log(chalk.yellow('\n⚠️  Warning: This appears to be a demo/test number'));
-        console.log(chalk.gray('   Authentication may fail with demo numbers'));
-        console.log(chalk.gray('   Use a real phone number registered with Bolt\n'));
-      }
-    }
-    
+    await performAuthentication(boltAPI, userInput);
+
+  } catch (error) {
+    await handleAuthError(error, userInput);
+  }
+}
+
+async function performAuthentication(boltAPI: BoltDriverAPI, userInput: UserInput) {
+  const spinner = ora();
+  let retryCount = 0;
+  const maxRetries = 3;
+
+  while (retryCount < maxRetries) {
     try {
+      // Step 1: Start authentication
+      spinner.start(`Sending SMS to ${userInput.phoneNumber}...`);
+
+      // Validate phone number format
+      if (userInput.useRealCredentials) {
+        const phoneRegex = /^\+[1-9]\d{1,14}$/;
+        if (!phoneRegex.test(userInput.phoneNumber)) {
+          throw new InvalidPhoneError(`Invalid phone number format: ${userInput.phoneNumber}. Must be in international format (e.g., +48123456789)`);
+        }
+
+        // Check if it's a known demo number
+        const demoNumbers = ['+48123456789', '+1234567890', '+0000000000'];
+        if (demoNumbers.includes(userInput.phoneNumber)) {
+          console.log(chalk.yellow('\n⚠️  Warning: This appears to be a demo/test number'));
+          console.log(chalk.gray('   Authentication may fail with demo numbers'));
+          console.log(chalk.gray('   Use a real phone number registered with Bolt\n'));
+        }
+      }
+
       const authResponse = await boltAPI.startAuthentication(userInput.phoneNumber);
       spinner.succeed(chalk.green('SMS sent successfully'));
-      
+
       console.log(boxen(
         `${chalk.yellow('📨 SMS Sent!')}\n\n` +
         `${chalk.gray('Verification Token:')} ${authResponse.verification_token.substring(0, 30)}...\n` +
@@ -144,117 +204,147 @@ async function authExample() {
       spinner.start('Verifying SMS code...');
       const confirmResponse = await boltAPI.confirmAuthentication(authResponse.verification_token, smsCode);
       spinner.succeed(chalk.green('SMS code verified successfully'));
-      
-      console.log(boxen(
-        `${chalk.green('✅ Authentication Successful!')}\n\n` +
-        `${chalk.gray('Token Type:')} ${confirmResponse.type}\n` +
-        `${chalk.gray('Access Token:')} ${confirmResponse.token.refresh_token.substring(0, 30)}...\n` +
-        `${chalk.gray('Token Type:')} ${confirmResponse.token.token_type}`,
-        { padding: 1, borderColor: 'green', borderStyle: 'double' }
-      ));
 
-      // Step 4: Use the token from authentication directly
-      spinner.start('Setting up authenticated session...');
-      spinner.succeed(chalk.green('Authenticated session ready'));
-      
-      console.log(chalk.cyan(`\n🎫 Using Token: ${confirmResponse.token.refresh_token.substring(0, 30)}...`));
-
-      // Step 5: Verify authentication status
-      const isAuthenticated = boltAPI.isAuthenticated();
-      const sessionInfo = boltAPI.getSessionInfo();
-
-      console.log(chalk.cyan('\n📋 Authentication Status:'));
-      console.log(`   ${chalk.gray('Authenticated:')} ${isAuthenticated ? chalk.green('✅ Yes') : chalk.red('❌ No')}`);
-      if (sessionInfo) {
-        console.log(`   ${chalk.gray('Driver ID:')} ${sessionInfo.driverId}`);
-        console.log(`   ${chalk.gray('Partner ID:')} ${sessionInfo.partnerId}`);
-        console.log(`   ${chalk.gray('Company City ID:')} ${sessionInfo.companyCityId}`);
-      }
-
-      console.log(boxen(
-        chalk.green.bold('🎉 Authentication Flow Completed Successfully!') + '\n\n' +
-        chalk.gray('You can now use the authenticated API instance to make requests to the Bolt Driver API.'),
-        { padding: 1, borderColor: 'green', borderStyle: 'double', margin: 1 }
-      ));
+      await showAuthSuccess(boltAPI, confirmResponse);
+      return;
 
     } catch (authError) {
-      spinner.fail(chalk.red('SMS sending failed'));
-      
-      // Enhanced debugging for API failures
-      console.log(chalk.red('\n🔍 API Debug Information:'));
-      console.log(`   ${chalk.gray('Error Type:')} ${(authError as any).constructor?.name || 'Unknown'}`);
-      console.log(`   ${chalk.gray('Error Message:')} ${(authError as Error).message}`);
-      
-      // Check if it's an Axios error with response details
-      if ((authError as any).response) {
-        const response = (authError as any).response;
-        console.log(`   ${chalk.gray('HTTP Status:')} ${response.status} ${response.statusText}`);
-        console.log(`   ${chalk.gray('Response Headers:')} ${JSON.stringify(response.headers, null, 2)}`);
-        console.log(`   ${chalk.gray('Response Data:')} ${JSON.stringify(response.data, null, 2)}`);
-      }
-      
-      // Check if it's an Axios error with request details
-      if ((authError as any).request) {
-        const request = (authError as any).request;
-        console.log(`   ${chalk.gray('Request Method:')} ${request.method}`);
-        console.log(`   ${chalk.gray('Request URL:')} ${request.url}`);
-        console.log(`   ${chalk.gray('Request Headers:')} ${JSON.stringify(request.headers, null, 2)}`);
-      }
-      
-      throw authError; // Re-throw to be caught by outer catch block
-    }
+      spinner.fail(chalk.red('Authentication failed'));
 
-  } catch (error) {
-    ora().fail(chalk.red('Authentication failed'));
-    
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    
-    // Enhanced error analysis
-    let errorDetails = '';
-    let suggestedActions = '';
-    
-    if (errorMessage.includes('Network Error') || errorMessage.includes('ENOTFOUND')) {
-      errorDetails = 'Network connectivity issue - unable to reach Bolt servers';
-      suggestedActions = '• Check your internet connection\n• Verify you can access https://driver.live.boltsvc.net\n• Check if Bolt services are available in your region';
-    } else if (errorMessage.includes('timeout') || errorMessage.includes('ETIMEDOUT')) {
-      errorDetails = 'Request timeout - Bolt servers are not responding';
-      suggestedActions = '• Bolt servers might be experiencing issues\n• Try again in a few minutes\n• Check Bolt service status';
-    } else if (errorMessage.includes('401') || errorMessage.includes('Unauthorized')) {
-      errorDetails = 'Authentication failed - invalid credentials or phone number';
-      suggestedActions = '• Verify the phone number is correct\n• Ensure the phone number is registered with Bolt\n• Check if you have a Bolt driver account';
-    } else if (errorMessage.includes('429') || errorMessage.includes('Too Many Requests')) {
-      errorDetails = 'Rate limiting - too many requests to Bolt API';
-      suggestedActions = '• Wait a few minutes before trying again\n• Reduce the frequency of API calls\n• Contact Bolt support if issue persists';
-    } else if (errorMessage.includes('Cannot read properties of undefined')) {
-      errorDetails = 'API response parsing error - unexpected response format';
-      suggestedActions = '• Bolt API format might have changed\n• Try updating the package\n• Report this as a bug';
-    } else {
-      errorDetails = 'Unknown error occurred';
-      suggestedActions = '• Check the error message above\n• Verify your input parameters\n• Try with a different phone number';
+      if (authError instanceof SmsLimitError) {
+        console.log(boxen(
+          `${chalk.red('⏱️  SMS Limit Reached')}\n\n` +
+          `${chalk.gray('Error:')} ${authError.message}\n\n` +
+          `${chalk.cyan('💡 Suggested Actions:')}\n` +
+          `• Wait at least 30 seconds before trying again\n` +
+          `• Check if you received the SMS\n` +
+          `• Use a different phone number`,
+          { padding: 1, borderColor: 'red', borderStyle: 'round' }
+        ));
+
+        const { wait } = await inquirer.prompt([
+          {
+            type: 'confirm',
+            name: 'wait',
+            message: 'Would you like to wait 30 seconds and try again?',
+            default: true
+          }
+        ]);
+
+        if (wait) {
+          console.log(chalk.yellow('⏳ Waiting 30 seconds...'));
+          await new Promise(resolve => setTimeout(resolve, 30000));
+          retryCount++;
+          continue;
+        } else {
+          return;
+        }
+
+      } else if (authError instanceof InvalidPhoneError) {
+        console.log(boxen(
+          `${chalk.red('📞 Invalid Phone Number')}\n\n` +
+          `${chalk.gray('Error:')} ${authError.message}\n\n` +
+          `${chalk.cyan('💡 Suggested Actions:')}\n` +
+          `• Check the phone number format (+country_code)\n` +
+          `• Ensure it's a valid phone number\n` +
+          `• Use a phone number registered with Bolt`,
+          { padding: 1, borderColor: 'red', borderStyle: 'round' }
+        ));
+        return;
+
+      } else if (authError instanceof DatabaseError) {
+        console.log(boxen(
+          `${chalk.red('🗄️  Server Database Error')}\n\n` +
+          `${chalk.gray('Error:')} ${authError.message}\n\n` +
+          `${chalk.cyan('💡 Suggested Actions:')}\n` +
+          `• Wait a few minutes and try again\n` +
+          `• Bolt servers might be experiencing issues\n` +
+          `• Check Bolt service status`,
+          { padding: 1, borderColor: 'red', borderStyle: 'round' }
+        ));
+
+        if (retryCount < maxRetries - 1) {
+          const { retry } = await inquirer.prompt([
+            {
+              type: 'confirm',
+              name: 'retry',
+              message: 'Would you like to retry?',
+              default: true
+            }
+          ]);
+
+          if (retry) {
+            console.log(chalk.yellow('⏳ Retrying in 5 seconds...'));
+            await new Promise(resolve => setTimeout(resolve, 5000));
+            retryCount++;
+            continue;
+          }
+        }
+        return;
+
+      } else {
+        // Handle other errors
+        console.log(chalk.red('\n🔍 API Debug Information:'));
+        console.log(`   ${chalk.gray('Error Type:')} ${(authError as any).constructor?.name || 'Unknown'}`);
+        console.log(`   ${chalk.gray('Error Message:')} ${(authError as Error).message}`);
+        return;
+      }
     }
-    
-    console.log(boxen(
-      `${chalk.red('❌ Authentication Failed')}\n\n` +
-      `${chalk.yellow('Error:')} ${errorMessage}\n\n` +
-      `${chalk.cyan('🔍 Analysis:')}\n${errorDetails}\n\n` +
-      `${chalk.cyan('💡 Suggested Actions:')}\n${suggestedActions}\n\n` +
-      `${chalk.green('✅ For Real Testing:')}\n` +
-      `• Use a phone number registered with Bolt\n` +
-      `• Ensure you have a valid Bolt driver account\n` +
-      `• Check if Bolt services are available in your country\n` +
-      `• Verify network connectivity to Bolt servers`,
-      { padding: 1, borderColor: 'red', borderStyle: 'round', margin: 1 }
-    ));
-    
-    // Additional debugging info
-    if (userInput.useRealCredentials) {
-      console.log(chalk.yellow('\n🔧 Debug Information:'));
-      console.log(`   ${chalk.gray('Phone Number:')} ${userInput.phoneNumber}`);
-      console.log(`   ${chalk.gray('Country:')} ${userInput.country}`);
-      console.log(`   ${chalk.gray('Device Type:')} ${userInput.deviceType}`);
-      console.log(`   ${chalk.gray('API Base URL:')} https://driver.live.boltsvc.net`);
-      console.log(`   ${chalk.gray('Auth Endpoint:')} https://partnerdriver.live.boltsvc.net/partnerDriver/startAuthentication`);
-    }
+  }
+}
+
+async function showAuthSuccess(boltAPI: BoltDriverAPI, confirmResponse?: any) {
+  console.log(boxen(
+    `${chalk.green('✅ Authentication Successful!')}\n\n` +
+    `${chalk.gray('Token Type:')} ${confirmResponse?.type || 'Bearer'}\n` +
+    `${chalk.gray('Access Token:')} ${confirmResponse?.token?.refresh_token?.substring(0, 30) || 'N/A'}...\n` +
+    `${chalk.gray('Token Type:')} ${confirmResponse?.token?.token_type || 'bearer'}`,
+    { padding: 1, borderColor: 'green', borderStyle: 'double' }
+  ));
+
+  // Step 4: Verify authentication status
+  const isAuthenticated = boltAPI.isAuthenticated();
+  const sessionInfo = boltAPI.getSessionInfo();
+
+  console.log(chalk.cyan('\n📋 Authentication Status:'));
+  console.log(`   ${chalk.gray('Authenticated:')} ${isAuthenticated ? chalk.green('✅ Yes') : chalk.red('❌ No')}`);
+  if (sessionInfo) {
+    console.log(`   ${chalk.gray('Driver ID:')} ${sessionInfo.driverId}`);
+    console.log(`   ${chalk.gray('Partner ID:')} ${sessionInfo.partnerId}`);
+    console.log(`   ${chalk.gray('Company City ID:')} ${sessionInfo.companyCityId}`);
+  }
+
+  console.log(boxen(
+    chalk.green.bold('🎉 Authentication Flow Completed Successfully!') + '\n\n' +
+    chalk.gray('You can now use the authenticated API instance to make requests to the Bolt Driver API.'),
+    { padding: 1, borderColor: 'green', borderStyle: 'double', margin: 1 }
+  ));
+}
+
+async function handleAuthError(error: any, userInput: UserInput) {
+  ora().fail(chalk.red('Authentication failed'));
+
+  const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+
+  console.log(boxen(
+    `${chalk.red('❌ Authentication Failed')}\n\n` +
+    `${chalk.yellow('Error:')} ${errorMessage}\n\n` +
+    `${chalk.green('✅ For Real Testing:')}\n` +
+    `• Use a phone number registered with Bolt\n` +
+    `• Ensure you have a valid Bolt driver account\n` +
+    `• Check if Bolt services are available in your country\n` +
+    `• Verify network connectivity to Bolt servers`,
+    { padding: 1, borderColor: 'red', borderStyle: 'round', margin: 1 }
+  ));
+
+  // Additional debugging info
+  if (userInput.useRealCredentials) {
+    console.log(chalk.yellow('\n🔧 Debug Information:'));
+    console.log(`   ${chalk.gray('Phone Number:')} ${userInput.phoneNumber}`);
+    console.log(`   ${chalk.gray('Country:')} ${userInput.country}`);
+    console.log(`   ${chalk.gray('Device Type:')} ${userInput.deviceType}`);
+    console.log(`   ${chalk.gray('API Base URL:')} https://driver.live.boltsvc.net`);
+    console.log(`   ${chalk.gray('Auth Endpoint:')} https://partnerdriver.live.boltsvc.net/partnerDriver/startAuthentication`);
   }
 }
 

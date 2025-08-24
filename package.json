@@ -20,7 +20,8 @@
     "examples:enhanced": "ts-node examples/enhanced.ts",
     "examples:magic-link": "ts-node examples/magic-link-example.ts",
     "test:magic-link": "ts-node examples/test-magic-link.ts",
-    "test:magic-link-simple": "ts-node examples/test-magic-link-simple.ts"
+    "test:magic-link-simple": "ts-node examples/test-magic-link-simple.ts",
+    "examples:bolt-driver": "ts-node examples/bolt-driver-endpoints.ts"
   },
   "keywords": [
     "bolt",
@@ -47,8 +48,12 @@
     "node": ">=16.0.0"
   },
   "dependencies": {
+    "@types/dotenv": "^6.1.1",
     "axios": "^1.6.0",
-    "uuid": "^9.0.1"
+    "dotenv": "^17.2.1",
+    "uuid": "^9.0.1",
+    "chalk": "^5.3.0",
+    "boxen": "^7.1.1"
   },
   "devDependencies": {
     "@types/inquirer": "^9.0.9",

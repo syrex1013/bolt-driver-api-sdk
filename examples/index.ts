@@ -12,10 +12,10 @@ import boxen from 'boxen';
 async function main() {
   console.clear();
   console.log(boxen(chalk.blue.bold('🚗 Bolt Driver API Examples'), {
-    padding: 1,
-    margin: 1,
-    borderStyle: 'round',
-    borderColor: 'blue'
+      padding: 1,
+      margin: 1,
+      borderStyle: 'round',
+      borderColor: 'blue'
   }));
 
   const { example } = await inquirer.prompt([

@@ -201,6 +201,7 @@ const token = extractTokenFromMagicLink(magicLinkUrl);
 This function handles both direct Bolt URLs and AWS tracking redirects, automatically decoding the token for use with the authentication endpoint.
 
 You can test the complete magic link flow with:
+
 ```bash
 npm run examples:magic-link
 ```
@@ -322,6 +323,210 @@ When logging is enabled, you'll see detailed information about API calls:
 [2025-01-22T10:30:15.456Z] [INFO] ← GET /driver/getDriverNavBarBadges (333ms)
 [2025-01-22T10:30:16.789Z] [ERROR] ✗ POST /driver/getDriverState (150ms) Network error
 ```
+
+## Bolt Driver Endpoints
+
+The following methods are available for Bolt driver-related operations:
+
+### Scheduled Ride Requests
+
+```typescript
+const scheduledRides = await api.getScheduledRideRequests({
+  brand: 'bolt',
+  country: 'pl',
+  deviceId: 'your_device_id',
+  deviceType: 'iphone',
+  device_name: 'iPhone17,3',
+  device_os_version: 'iOS18.6',
+  driver_id: 'your_driver_id',
+  session_id: 'your_session_id'
+});
+```
+
+### Earnings Landing Screen
+
+```typescript
+const earningsScreen = await api.getEarningLandingScreen({
+  brand: 'bolt',
+  country: 'pl',
+  deviceId: 'your_device_id',
+  deviceType: 'iphone',
+  device_name: 'iPhone17,3',
+  device_os_version: 'iOS18.6',
+  driver_id: 'your_driver_id',
+  session_id: 'your_session_id'
+});
+```
+
+### Activity Rides
+
+```typescript
+const activityRides = await api.getActivityRides({
+  brand: 'bolt',
+  country: 'pl',
+  deviceId: 'your_device_id',
+  deviceType: 'iphone',
+  device_name: 'iPhone17,3',
+  device_os_version: 'iOS18.6',
+  driver_id: 'your_driver_id',
+  session_id: 'your_session_id',
+  group_by: 'all'
+});
+```
+
+### Order History
+
+```typescript
+const orderHistory = await api.getOrderHistoryPaginated({
+  brand: 'bolt',
+  country: 'pl',
+  deviceId: 'your_device_id',
+  deviceType: 'iphone',
+  device_name: 'iPhone17,3',
+  device_os_version: 'iOS18.6',
+  driver_id: 'your_driver_id',
+  session_id: 'your_session_id'
+});
+```
+
+### Help Details
+
+```typescript
+const helpDetails = await api.getHelpDetails({
+  brand: 'bolt',
+  country: 'pl',
+  deviceId: 'your_device_id',
+  deviceType: 'iphone',
+  device_name: 'iPhone17,3',
+  device_os_version: 'iOS18.6',
+  driver_id: 'your_driver_id',
+  session_id: 'your_session_id'
+});
+```
+
+### Earn More Details
+
+```typescript
+const earnMoreDetails = await api.getEarnMoreDetails({
+  brand: 'bolt',
+  country: 'pl',
+  deviceId: 'your_device_id',
+  deviceType: 'iphone',
+  device_name: 'iPhone17,3',
+  device_os_version: 'iOS18.6',
+  driver_id: 'your_driver_id',
+  session_id: 'your_session_id'
+});
+```
+
+### Driver Score Overview
+
+```typescript
+const scoreOverview = await api.getScoreOverview({
+  brand: 'bolt',
+  country: 'pl',
+  deviceId: 'your_device_id',
+  deviceType: 'iphone',
+  device_name: 'iPhone17,3',
+  device_os_version: 'iOS18.6',
+  driver_id: 'your_driver_id',
+  session_id: 'your_session_id'
+});
+```
+
+### Driver Sidebar
+
+```typescript
+const driverSidebar = await api.getDriverSidebar({
+  brand: 'bolt',
+  country: 'pl',
+  deviceId: 'your_device_id',
+  deviceType: 'iphone',
+  device_name: 'iPhone17,3',
+  device_os_version: 'iOS18.6',
+  driver_id: 'your_driver_id',
+  session_id: 'your_session_id'
+});
+```
+
+## Bolt Driver Endpoints Example
+
+### Configuration
+
+To run the Bolt driver endpoints example with real API calls, you need to provide configuration through one of two methods:
+
+1. **JSON Credentials File**:
+   Create a `.magic-link-token.json` file in the project root with the following structure:
+
+   ```json
+   {
+     "deviceId": "your_device_id",
+     "deviceType": "iphone",
+     "deviceName": "iPhone17,3",
+     "deviceOsVersion": "iOS18.6",
+     "appVersion": "DI.115.0",
+     "authMethod": "phone",
+     "brand": "bolt",
+     "country": "pl",
+     "language": "en-GB",
+     "theme": "dark",
+     "driver_id": "your_driver_id",
+     "session_id": "your_session_id"
+   }
+   ```
+
+2. **Environment Variables**:
+
+   ```bash
+   # Required environment variables
+   export BOLT_ENABLE_REAL_API_CALLS=true
+   export BOLT_DEVICE_ID=your_device_id
+   export BOLT_DEVICE_TYPE=iphone
+   export BOLT_DEVICE_NAME=iPhone17,3
+   export BOLT_DEVICE_OS_VERSION=iOS18.6
+   export BOLT_APP_VERSION=DI.115.0
+   export BOLT_DRIVER_ID=your_driver_id
+   export BOLT_SESSION_ID=your_session_id
+
+   # Optional configuration
+   export BOLT_AUTH_METHOD=phone
+   export BOLT_BRAND=bolt
+   export BOLT_COUNTRY=pl
+   export BOLT_LANGUAGE=en-GB
+   export BOLT_THEME=dark
+   export BOLT_LOG_LEVEL=debug
+   ```
+
+### Running the Example
+
+```bash
+# Run with mock data (default)
+npm run examples:bolt-driver
+
+# Run with real API calls
+BOLT_ENABLE_REAL_API_CALLS=true npm run examples:bolt-driver
+```
+
+### Supported Endpoints
+
+The example demonstrates the following Bolt driver-related endpoints:
+
+1. `getScheduledRideRequests`: Fetch scheduled ride requests
+2. `getEarningLandingScreen`: Retrieve earnings landing screen details
+3. `getActivityRides`: Get activity rides with optional grouping
+4. `getOrderHistoryPaginated`: Fetch paginated order history
+5. `getHelpDetails`: Retrieve help details
+6. `getEarnMoreDetails`: Get details about earning more
+7. `getScoreOverview`: Fetch driver score overview
+8. `getDriverSidebar`: Get driver sidebar information
+
+### Notes
+
+- By default, the example runs with mock data to prevent unintended API calls.
+- Enable real API calls by setting `BOLT_ENABLE_REAL_API_CALLS=true`.
+- Ensure you have valid credentials before making real API calls.
+- The example supports flexible configuration through a JSON file or environment variables.
+- Log level can be set to `debug`, `info`, `warn`, or `error` for detailed output.
 
 ## Contributing
 

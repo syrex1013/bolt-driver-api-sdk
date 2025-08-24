@@ -1,7 +1,7 @@
 // Device and Platform Information
 export interface DeviceInfo {
   deviceId: string;
-  deviceType: 'iphone' | 'android';
+  deviceType: "iphone" | "android";
   deviceName: string;
   deviceOsVersion: string;
   appVersion: string;
@@ -25,11 +25,11 @@ export interface GpsInfo {
 
 // Authentication and Session
 export interface AuthConfig {
-  authMethod: 'phone' | 'email';
+  authMethod: "phone" | "email";
   brand: string;
   country: string;
   language: string;
-  theme: 'light' | 'dark';
+  theme: "light" | "dark";
 }
 
 export interface SessionInfo {
@@ -49,6 +49,10 @@ export interface ApiResponse<T = any> {
   code: number;
   message: string;
   data: T;
+  error_data?: {
+    text?: string;
+    [key: string]: any;
+  };
 }
 
 // Magic Link Authentication
@@ -153,9 +157,9 @@ export interface MapsConfig {
 
 // Driver State and Status
 export interface DriverState {
-  driverState: 'inactive' | 'active' | 'busy' | 'offline';
+  driverState: "inactive" | "active" | "busy" | "offline";
   takeNewOrdersDuringOrder: boolean;
-  orderAcceptance: 'auto' | 'manual';
+  orderAcceptance: "auto" | "manual";
   maxClientDistance: number;
   orders: any[];
   driverDestinationId: number;
@@ -177,7 +181,7 @@ export interface HomeScreenData {
 }
 
 export interface HomeScreenItem {
-  type: 'banner' | 'tile' | 'simple_tile';
+  type: "banner" | "tile" | "simple_tile";
   payload: any;
   layout: {
     row: number;
@@ -281,6 +285,12 @@ export interface ConfirmAuthResponse {
   };
 }
 
+// Credentials interface for authentication
+export interface Credentials {
+  driver_id: string;
+  session_id: string;
+}
+
 // API Configuration
 export interface BoltApiConfig {
   baseUrl: string;
@@ -319,6 +329,9 @@ export interface RequestParams {
   y?: number;
   zoom?: number;
   event?: string;
+  group_by?: string;
+  limit?: number;
+  offset?: number;
 }
 
 // Error Types
@@ -329,21 +342,49 @@ export class BoltApiError extends Error {
     public response?: any
   ) {
     super(message);
-    this.name = 'BoltApiError';
+    this.name = "BoltApiError";
   }
 }
 
 export class AuthenticationError extends BoltApiError {
   constructor(message: string, statusCode: number, response?: any) {
     super(message, statusCode, response);
-    this.name = 'AuthenticationError';
+    this.name = "AuthenticationError";
   }
 }
 
 export class ValidationError extends BoltApiError {
   constructor(message: string, statusCode: number, response?: any) {
     super(message, statusCode, response);
-    this.name = 'ValidationError';
+    this.name = "ValidationError";
+  }
+}
+
+export class SmsLimitError extends BoltApiError {
+  constructor(message: string, response?: any) {
+    super(message, 200, response);
+    this.name = "SmsLimitError";
+  }
+}
+
+export class InvalidSmsCodeError extends BoltApiError {
+  constructor(message: string, response?: any) {
+    super(message, 200, response);
+    this.name = "InvalidSmsCodeError";
+  }
+}
+
+export class InvalidPhoneError extends BoltApiError {
+  constructor(message: string, response?: any) {
+    super(message, 200, response);
+    this.name = "InvalidPhoneError";
+  }
+}
+
+export class DatabaseError extends BoltApiError {
+  constructor(message: string, response?: any) {
+    super(message, 200, response);
+    this.name = "DatabaseError";
   }
 }
 
@@ -362,7 +403,7 @@ export interface FileTokenStorage extends TokenStorage {
 // Logging Configuration
 export interface LoggingConfig {
   enabled: boolean;
-  level: 'debug' | 'info' | 'warn' | 'error';
+  level: "debug" | "info" | "warn" | "error";
   logRequests: boolean;
   logResponses: boolean;
   logErrors: boolean;

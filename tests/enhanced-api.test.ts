@@ -145,11 +145,32 @@ describe('Enhanced BoltDriverAPI', () => {
         }
       };
 
-      mockedAxios.post.mockResolvedValueOnce({
+      // Mock the axios instance that BoltDriverAPI uses internally
+      mockAxiosInstance.post.mockResolvedValueOnce({
         data: { data: mockAuthResponse }
       });
 
-      await boltAPI.confirmAuthentication('verification-token', '123456');
+      await boltAPI.confirmAuthentication(
+        {
+          authMethod: 'phone',
+          brand: 'bolt',
+          country: 'pl',
+          language: 'en-GB',
+          theme: 'dark'
+        },
+        {
+          deviceId: 'test-device-id',
+          deviceType: 'iphone',
+          deviceName: 'iPhone17,3',
+          deviceOsVersion: 'iOS18.6',
+          appVersion: 'DI.116.0'
+        },
+        {
+          driver_id: 'test_driver_id',
+          session_id: 'test_session_id'
+        },
+        '123456'
+      );
       
       // Token should be saved
       const hasToken = await mockTokenStorage.hasValidToken();
