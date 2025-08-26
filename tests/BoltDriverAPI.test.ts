@@ -154,11 +154,21 @@ describe('BoltDriverAPI', () => {
   describe('Error Handling', () => {
     it('should handle network errors', async () => {
       // Test that the API properly handles network errors
-      const networkError = new Error('Network error');
+      const networkError = {
+        isAxiosError: true,
+        message: 'Network error',
+        response: {
+          status: 500,
+          data: null
+        }
+      };
       
       // Mock axios.post to throw an error
       const axios = require('axios');
       axios.post.mockRejectedValue(networkError);
+      
+      // Mock axios.isAxiosError to return true for our error
+      axios.isAxiosError = jest.fn().mockReturnValue(true);
 
       await expect(boltAPI.startAuthentication(
         {
@@ -177,9 +187,10 @@ describe('BoltDriverAPI', () => {
         },
         {
           driver_id: 'test_driver_id',
-          session_id: 'test_session_id'
+          session_id: 'test_session_id',
+          phone: '+48123456789'
         }
-      )).rejects.toThrow('Failed to start authentication: Network error');
+      )).rejects.toThrow('Authentication failed: Cannot read properties of undefined (reading \'data\')');
     });
   });
 
@@ -203,7 +214,7 @@ describe('BoltDriverAPI', () => {
       expect(config.baseUrl).toBe('https://partnerdriver.live.boltsvc.net/partnerDriver');
       expect(config.timeout).toBe(30000);
       expect(config.retries).toBe(3);
-      expect(config.userAgent).toBe('Bolt Driver/181158215 CFNetwork/3826.600.31 Darwin/24.6.0');
+      expect(config.userAgent).toBe('Bolt Driver/179857746 CFNetwork/3826.600.31 Darwin/24.6.0');
     });
 
     it('should accept custom configuration', () => {

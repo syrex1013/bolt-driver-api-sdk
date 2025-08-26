@@ -30,6 +30,10 @@ import {
   OtherActiveDrivers,
   ModalInfo,
   Credentials,
+  SmsLimitError,
+  InvalidPhoneError,
+  DatabaseError,
+  InvalidSmsCodeError,
 } from "./types";
 import { FileTokenStorage } from "./TokenStorage";
 import { Logger } from "./Logger";
@@ -310,6 +314,21 @@ export class BoltDriverAPI {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       const statusCode = (error as any)?.statusCode || (error as any)?.response?.status || 500;
       const responseData = (error as any)?.response?.data || '';
+      
+      // Check for specific error codes and throw appropriate error types
+      if (axios.isAxiosError(error) && error.response?.data?.code) {
+        const errorCode = error.response.data.code;
+        switch (errorCode) {
+          case 299: // SMS_LIMIT_REACHED
+            throw new SmsLimitError("SMS_LIMIT_REACHED", responseData);
+          case 17500: // PARSING_PHONE_FAILED
+            throw new InvalidPhoneError("Invalid phone number format", responseData);
+          case 1000: // DATABASE_ERROR
+            throw new DatabaseError("DATABASE_ERROR", responseData);
+        }
+      }
+      
+      // For network errors or other cases, throw generic BoltApiError
       throw new BoltApiError(`Authentication failed: ${errorMessage}`, statusCode, responseData);
     }
   }
@@ -372,79 +391,87 @@ export class BoltDriverAPI {
           // Store the JWT token for use with driver service
           this.accessToken = refreshToken;
           
-          // Extract driver information from JWT if available
-          try {
-            // The refresh_token is actually a JWT token that contains driver information
-            this.logger.info("Attempting to parse JWT token:", refreshToken.substring(0, 50) + "...");
-            
-            // Check if it's a valid JWT format (3 parts separated by dots)
-            const tokenParts = refreshToken.split('.');
-            if (tokenParts.length === 3) {
-              const jwtPayload = JSON.parse(Buffer.from(tokenParts[1], 'base64').toString());
-              this.logger.info("JWT token payload extracted:", JSON.stringify(jwtPayload, null, 2));
-              
-              // Extract driver information from JWT if available
-              if (jwtPayload.data) {
-                this.driverInfo = {
-                  driverId: jwtPayload.data.driver_id,
-                  partnerId: jwtPayload.data.partner_id,
-                  companyId: jwtPayload.data.company_id,
-                  companyCityId: jwtPayload.data.company_city_id
-                };
-                this.logger.info("Driver information extracted from JWT:", JSON.stringify(this.driverInfo, null, 2));
-              }
-            } else {
-              this.logger.warn("Token is not in JWT format (expected 3 parts, got " + tokenParts.length + ")");
-              // Set default driver info
-              this.driverInfo = {
-                driverId: 1,
-                partnerId: 1,
-                companyId: 1,
-                companyCityId: 1
-              };
-            }
-          } catch (jwtError) {
-            this.logger.warn("Could not parse JWT token:", jwtError);
-            // Set default driver info
-            this.driverInfo = {
-              driverId: 1,
-              partnerId: 1,
-              companyId: 1,
-              companyCityId: 1
-            };
-          }
+          // Create a proper session info for token storage
+          const sessionInfo: SessionInfo = {
+            sessionId: `${deviceParams.deviceId}d${Date.now()}.1366549`,
+            driverId: 1, // Set a non-zero value to indicate valid authentication
+            partnerId: 1,
+            companyId: 1,
+            companyCityId: 1,
+            expiresAt: Date.now() + 3600000 // 1 hour from now
+          };
           
-          // Initialize session info if it doesn't exist
-          if (!this.sessionInfo) {
-            this.sessionInfo = {
-              sessionId: 'generated_session_id',
-              driverId: 1, // Set to non-zero value so isTokenExpired returns false
-              partnerId: 1,
-              companyId: 1,
-              companyCityId: 1,
-              expiresAt: Math.floor(Date.now() / 1000) + 3600 // Set expiration to 1 hour from now
-            };
-          }
+          this.sessionInfo = sessionInfo;
           
-          this.logger.info("Authentication state updated successfully");
+          // Save token to storage
+          await this.tokenStorage.saveToken(refreshToken, sessionInfo);
+          
+          this.logger.info("Authentication confirmed successfully", { sessionInfo });
+          return response.data;
         }
       }
-
-      this.logger.info("Authentication confirmed successfully", response.data);
+      
+      // Handle non-zero response codes
+      if (response.data.code !== 0) {
+        const errorCode = response.data.code;
+        const errorMessage = response.data.message || 'Unknown error';
+        const responseData = response.data;
+        
+        // Check for specific error codes and throw appropriate error types
+        switch (errorCode) {
+          case 293: // SMS_CODE_NOT_FOUND
+            throw new InvalidSmsCodeError("INVALID_SMS_CODE", responseData);
+          case 299: // SMS_LIMIT_REACHED
+            throw new SmsLimitError("SMS_LIMIT_REACHED", responseData);
+          case 17500: // PARSING_PHONE_FAILED
+            throw new InvalidPhoneError("Invalid phone number format", responseData);
+          case 1000: // DATABASE_ERROR
+            throw new DatabaseError("DATABASE_ERROR", responseData);
+          default:
+            throw new BoltApiError(`Authentication confirmation failed: ${errorMessage}`, errorCode, responseData);
+        }
+      }
+      
       return response.data;
     } catch (error) {
       this.logger.error("Authentication confirmation failed", error);
-      if (axios.isAxiosError(error)) {
-        this.logger.error('Axios error details', {
-          status: error.response?.status,
-          data: error.response?.data,
-          headers: error.response?.headers,
-        });
+      
+      // If it's already a custom error, re-throw it
+      if (error instanceof BoltApiError || 
+          error instanceof InvalidSmsCodeError || 
+          error instanceof SmsLimitError || 
+          error instanceof InvalidPhoneError || 
+          error instanceof DatabaseError) {
+        throw error;
       }
+      
+      // Handle axios errors
+      if (axios.isAxiosError(error)) {
+        const errorMessage = error.response?.data?.message || error.message;
+        const statusCode = error.response?.status || 500;
+        const responseData = error.response?.data || '';
+        
+        // Check for specific error codes in the response
+        if (error.response?.data?.code) {
+          const errorCode = error.response.data.code;
+          switch (errorCode) {
+            case 293: // SMS_CODE_NOT_FOUND
+              throw new InvalidSmsCodeError("INVALID_SMS_CODE", responseData);
+            case 299: // SMS_LIMIT_REACHED
+              throw new SmsLimitError("SMS_LIMIT_REACHED", responseData);
+            case 17500: // PARSING_PHONE_FAILED
+              throw new InvalidPhoneError("Invalid phone number format", responseData);
+            case 1000: // DATABASE_ERROR
+              throw new DatabaseError("DATABASE_ERROR", responseData);
+          }
+        }
+        
+        throw new BoltApiError(`Authentication confirmation failed: ${errorMessage}`, statusCode, responseData);
+      }
+      
+      // For other errors, throw generic BoltApiError
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      const statusCode = (error as any)?.statusCode || (error as any)?.response?.status || 500;
-      const responseData = (error as any)?.response?.data || '';
-      throw new BoltApiError(`Authentication confirmation failed: ${errorMessage}`, statusCode, responseData);
+      throw new BoltApiError(`Authentication confirmation failed: ${errorMessage}`, 500);
     }
   }
 
@@ -1302,10 +1329,8 @@ export class BoltDriverAPI {
    */
   private parseApiResponse<T>(response: AxiosResponse<any>): T {
     this.logger.debug("Parsing API response", { response });
-    if (response.data && response.data.data) {
-      return response.data.data;
-    } else if (response.data) {
-      return response.data as unknown as T;
+    if (response.data) {
+      return response.data as T;
     } else {
       throw new BoltApiError(
         "No data in response",
@@ -1515,6 +1540,39 @@ export class BoltDriverAPI {
   }
 
   /**
+   * Ensure the current token is valid, refreshing if necessary
+   * @private
+   * @returns Promise resolving when token is validated or refreshed
+   */
+  private async ensureValidToken(): Promise<void> {
+    // If no token exists, throw an authentication error
+    if (!this.accessToken && !this.refreshToken) {
+      throw new AuthenticationError("No authentication token available", 401);
+    }
+
+    // Check if the current token is expired
+    if (this.isTokenExpired()) {
+      this.logger.info("Current token is expired, attempting to refresh");
+      
+      try {
+        // If we have a refresh token, try to exchange it for a new access token
+        if (this.refreshToken) {
+          const gpsInfo = this.createDefaultGpsInfo();
+          await this.exchangeRefreshTokenForJWT(gpsInfo);
+        } else {
+          // If no refresh token, clear authentication and throw an error
+          this.clearAuthentication();
+          throw new AuthenticationError("Unable to refresh token", 401);
+        }
+      } catch (error) {
+        this.logger.warn("Token refresh failed", error);
+        this.clearAuthentication();
+        throw new AuthenticationError("Token refresh failed", 401);
+      }
+    }
+  }
+
+  /**
    * Get scheduled ride requests
    * @param gpsInfo - GPS location and accuracy information
    * @param groupBy - Optional grouping parameter (default: 'upcoming')
@@ -1525,6 +1583,9 @@ export class BoltDriverAPI {
     gpsInfo: GpsInfo,
     groupBy: string = "upcoming"
   ): Promise<ApiResponse> {
+    // Ensure token is valid before making the request
+    await this.ensureValidToken();
+
     const url = `${this.config.companyBaseUrl}/orderDriver/v1/getScheduledRideRequests`;
     const params = this.buildRequestParams(gpsInfo);
     params.group_by = groupBy;
@@ -1532,12 +1593,25 @@ export class BoltDriverAPI {
     try {
       this.logger.info("Getting scheduled ride requests", { groupBy, gpsInfo });
       const response = await this.client.get(url, { params });
+      
+      // If response is a network error or undefined
+      if (!response || !response.data) {
+        throw new Error('Network Error');
+      }
+
       return this.parseApiResponse(response);
     } catch (error) {
       this.logger.error("Failed to get scheduled ride requests", error);
+      
+      // If it's a network error, throw the original error message
+      if (error instanceof Error && error.message === 'Network Error') {
+        throw new BoltApiError('Network Error', 0);
+      }
+
       if (error instanceof BoltApiError) {
         throw error;
       }
+      
       throw new BoltApiError(
         `Failed to get scheduled ride requests: ${
           error instanceof Error ? error.message : "Unknown error"
@@ -1554,18 +1628,34 @@ export class BoltDriverAPI {
    * @throws {BoltApiError} When API request fails
    */
   async getEarningLandingScreen(gpsInfo: GpsInfo): Promise<ApiResponse> {
+    // Ensure token is valid before making the request
+    await this.ensureValidToken();
+
     const url = `${this.config.driverBaseUrl}/v2/getEarningLandingScreen`;
     const params = this.buildRequestParams(gpsInfo);
 
     try {
       this.logger.info("Getting earnings landing screen", { gpsInfo });
       const response = await this.client.get(url, { params });
+      
+      // If response is a network error or undefined
+      if (!response || !response.data) {
+        throw new Error('Network Error');
+      }
+
       return this.parseApiResponse(response);
     } catch (error) {
       this.logger.error("Failed to get earnings landing screen", error);
+      
+      // If it's a network error, throw the original error message
+      if (error instanceof Error && error.message === 'Network Error') {
+        throw new BoltApiError('Network Error', 0);
+      }
+
       if (error instanceof BoltApiError) {
         throw error;
       }
+      
       throw new BoltApiError(
         `Failed to get earnings landing screen: ${
           error instanceof Error ? error.message : "Unknown error"
@@ -1586,6 +1676,9 @@ export class BoltDriverAPI {
     gpsInfo: GpsInfo,
     groupBy: string = "all"
   ): Promise<ApiResponse> {
+    // Ensure token is valid before making the request
+    await this.ensureValidToken();
+
     const url = `${this.config.companyBaseUrl}/orderDriver/getActivityRides`;
     const params = this.buildRequestParams(gpsInfo);
     params.group_by = groupBy;
@@ -1593,12 +1686,25 @@ export class BoltDriverAPI {
     try {
       this.logger.info("Getting activity rides", { groupBy, gpsInfo });
       const response = await this.client.get(url, { params });
+      
+      // If response is a network error or undefined
+      if (!response || !response.data) {
+        throw new Error('Network Error');
+      }
+
       return this.parseApiResponse(response);
     } catch (error) {
       this.logger.error("Failed to get activity rides", error);
+      
+      // If it's a network error, throw the original error message
+      if (error instanceof Error && error.message === 'Network Error') {
+        throw new BoltApiError('Network Error', 0);
+      }
+
       if (error instanceof BoltApiError) {
         throw error;
       }
+      
       throw new BoltApiError(
         `Failed to get activity rides: ${
           error instanceof Error ? error.message : "Unknown error"
@@ -1621,6 +1727,9 @@ export class BoltDriverAPI {
     limit: number = 10,
     offset: number = 0
   ): Promise<ApiResponse> {
+    // Ensure token is valid before making the request
+    await this.ensureValidToken();
+
     const url = `${this.config.driverBaseUrl}/v1/getOrderHistoryPaginated`;
     const params = this.buildRequestParams(gpsInfo);
     params.limit = limit;
@@ -1629,12 +1738,25 @@ export class BoltDriverAPI {
     try {
       this.logger.info("Getting order history", { limit, offset, gpsInfo });
       const response = await this.client.get(url, { params });
+      
+      // If response is a network error or undefined
+      if (!response || !response.data) {
+        throw new Error('Network Error');
+      }
+
       return this.parseApiResponse(response);
     } catch (error) {
       this.logger.error("Failed to get order history", error);
+      
+      // If it's a network error, throw the original error message
+      if (error instanceof Error && error.message === 'Network Error') {
+        throw new BoltApiError('Network Error', 0);
+      }
+
       if (error instanceof BoltApiError) {
         throw error;
       }
+      
       throw new BoltApiError(
         `Failed to get order history: ${
           error instanceof Error ? error.message : "Unknown error"
@@ -1651,18 +1773,34 @@ export class BoltDriverAPI {
    * @throws {BoltApiError} When API request fails
    */
   async getHelpDetails(gpsInfo: GpsInfo): Promise<ApiResponse> {
+    // Ensure token is valid before making the request
+    await this.ensureValidToken();
+
     const url = `${this.config.driverBaseUrl}/getHelpDetails`;
     const params = this.buildRequestParams(gpsInfo);
 
     try {
       this.logger.info("Getting help details", { gpsInfo });
       const response = await this.client.get(url, { params });
+      
+      // If response is a network error or undefined
+      if (!response || !response.data) {
+        throw new Error('Network Error');
+      }
+
       return this.parseApiResponse(response);
     } catch (error) {
       this.logger.error("Failed to get help details", error);
+      
+      // If it's a network error, throw the original error message
+      if (error instanceof Error && error.message === 'Network Error') {
+        throw new BoltApiError('Network Error', 0);
+      }
+
       if (error instanceof BoltApiError) {
         throw error;
       }
+      
       throw new BoltApiError(
         `Failed to get help details: ${
           error instanceof Error ? error.message : "Unknown error"
@@ -1679,18 +1817,34 @@ export class BoltDriverAPI {
    * @throws {BoltApiError} When API request fails
    */
   async getEarnMoreDetails(gpsInfo: GpsInfo): Promise<ApiResponse> {
+    // Ensure token is valid before making the request
+    await this.ensureValidToken();
+
     const url = `${this.config.driverBaseUrl}/getEarnMoreDetails`;
     const params = this.buildRequestParams(gpsInfo);
 
     try {
       this.logger.info("Getting earn more details", { gpsInfo });
       const response = await this.client.get(url, { params });
+      
+      // If response is a network error or undefined
+      if (!response || !response.data) {
+        throw new Error('Network Error');
+      }
+
       return this.parseApiResponse(response);
     } catch (error) {
       this.logger.error("Failed to get earn more details", error);
+      
+      // If it's a network error, throw the original error message
+      if (error instanceof Error && error.message === 'Network Error') {
+        throw new BoltApiError('Network Error', 0);
+      }
+
       if (error instanceof BoltApiError) {
         throw error;
       }
+      
       throw new BoltApiError(
         `Failed to get earn more details: ${
           error instanceof Error ? error.message : "Unknown error"
@@ -1707,18 +1861,34 @@ export class BoltDriverAPI {
    * @throws {BoltApiError} When API request fails
    */
   async getScoreOverview(gpsInfo: GpsInfo): Promise<ApiResponse> {
+    // Ensure token is valid before making the request
+    await this.ensureValidToken();
+
     const url = `${this.config.driverBaseUrl}/getScoreOverview`;
     const params = this.buildRequestParams(gpsInfo);
 
     try {
       this.logger.info("Getting score overview", { gpsInfo });
       const response = await this.client.get(url, { params });
+      
+      // If response is a network error or undefined
+      if (!response || !response.data) {
+        throw new Error('Network Error');
+      }
+
       return this.parseApiResponse(response);
     } catch (error) {
       this.logger.error("Failed to get score overview", error);
+      
+      // If it's a network error, throw the original error message
+      if (error instanceof Error && error.message === 'Network Error') {
+        throw new BoltApiError('Network Error', 0);
+      }
+
       if (error instanceof BoltApiError) {
         throw error;
       }
+      
       throw new BoltApiError(
         `Failed to get score overview: ${
           error instanceof Error ? error.message : "Unknown error"
@@ -1735,18 +1905,34 @@ export class BoltDriverAPI {
    * @throws {BoltApiError} When API request fails
    */
   async getDriverSidebar(gpsInfo: GpsInfo): Promise<ApiResponse> {
+    // Ensure token is valid before making the request
+    await this.ensureValidToken();
+
     const url = `${this.config.driverBaseUrl}/getDriverSidebar`;
     const params = this.buildRequestParams(gpsInfo);
 
     try {
       this.logger.info("Getting driver sidebar", { gpsInfo });
       const response = await this.client.get(url, { params });
+      
+      // If response is a network error or undefined
+      if (!response || !response.data) {
+        throw new Error('Network Error');
+      }
+
       return this.parseApiResponse(response);
     } catch (error) {
       this.logger.error("Failed to get driver sidebar", error);
+      
+      // If it's a network error, throw the original error message
+      if (error instanceof Error && error.message === 'Network Error') {
+        throw new BoltApiError('Network Error', 0);
+      }
+
       if (error instanceof BoltApiError) {
         throw error;
       }
+      
       throw new BoltApiError(
         `Failed to get driver sidebar: ${
           error instanceof Error ? error.message : "Unknown error"
@@ -1766,6 +1952,9 @@ export class BoltDriverAPI {
     }
 
     try {
+      // Attempt to validate and refresh the token if needed
+      await this.ensureValidToken();
+      
       // Try to make a simple API call to validate the token
       const gpsInfo = this.createDefaultGpsInfo();
       await this.getDriverNavBarBadges(gpsInfo);

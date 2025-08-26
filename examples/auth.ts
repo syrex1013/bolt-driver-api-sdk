@@ -25,7 +25,7 @@ interface UserInput {
  * This example provides an interactive CLI for testing authentication
  */
 
-async function authExample() {
+export async function authExample() {
   console.clear();
   console.log(boxen(chalk.blue.bold('🔐 Bolt Driver Authentication Example'), {
     padding: 1,

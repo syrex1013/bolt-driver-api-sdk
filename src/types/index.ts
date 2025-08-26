@@ -41,7 +41,7 @@ export interface SessionInfo {
   accessToken?: string;
   refreshToken?: string;
   tokenType?: string;
-  expiresAt?: number;
+  expiresAt: number;
 }
 
 // API Response Types

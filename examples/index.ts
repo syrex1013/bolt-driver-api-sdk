@@ -62,7 +62,8 @@ async function main() {
   try {
     switch (example) {
       case 'auth':
-        await import('./auth');
+        const { authExample } = await import('./auth');
+        await authExample();
         break;
       case 'enhanced':
         await import('./enhanced');

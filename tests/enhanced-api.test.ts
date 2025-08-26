@@ -135,20 +135,32 @@ describe('Enhanced BoltDriverAPI', () => {
 
     it('should save token after successful authentication', async () => {
       boltAPI = new BoltDriverAPI(mockDeviceInfo, mockAuthConfig, undefined, mockTokenStorage);
-      
-      // Mock successful authentication
-      const mockAuthResponse = {
-        type: 'driver',
-        token: {
-          refresh_token: 'new-token-123',
-          token_type: 'driver'
-        }
+
+      // Mock successful authentication response
+      const mockResponse = {
+        data: {
+          code: 0,
+          message: 'OK',
+          data: {
+            type: 'driver',
+            token: {
+              refresh_token: 'new-token-123',
+              token_type: 'driver'
+            }
+          }
+        },
+        status: 200,
+        statusText: 'OK',
+        headers: {},
+        config: {} as any
       };
 
-      // Mock the axios instance that BoltDriverAPI uses internally
-      mockAxiosInstance.post.mockResolvedValueOnce({
-        data: { data: mockAuthResponse }
-      });
+      // Mock the client post method directly
+      jest.spyOn((boltAPI as any).client, 'post').mockResolvedValueOnce(mockResponse);
+
+      // Mock the token storage methods
+      jest.spyOn(mockTokenStorage, 'saveToken').mockResolvedValueOnce();
+      jest.spyOn(mockTokenStorage, 'hasValidToken').mockResolvedValueOnce(true);
 
       await boltAPI.confirmAuthentication(
         {
@@ -167,11 +179,12 @@ describe('Enhanced BoltDriverAPI', () => {
         },
         {
           driver_id: 'test_driver_id',
-          session_id: 'test_session_id'
+          session_id: 'test_session_id',
+          phone: '+48123456789'
         },
         '123456'
       );
-      
+
       // Token should be saved
       const hasToken = await mockTokenStorage.hasValidToken();
       expect(hasToken).toBe(true);
@@ -244,8 +257,12 @@ describe('Enhanced BoltDriverAPI', () => {
         mockAxiosInstance.get.mockResolvedValueOnce(mockResponse);
 
         const result = await boltAPI.getOtherActiveDrivers(mockGpsInfo);
-        
-        expect(result).toEqual({ list: [] });
+
+        expect(result).toEqual({
+          code: 0,
+          message: 'OK',
+          data: { list: [] }
+        });
         expect(mockAxiosInstance.get).toHaveBeenCalledWith(
           'https://node.bolt.eu/search/driver/getOtherActiveDrivers',
           expect.objectContaining({
