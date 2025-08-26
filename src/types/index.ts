@@ -261,12 +261,16 @@ export interface StartAuthRequest {
 }
 
 export interface StartAuthResponse {
-  verification_token: string;
-  verification_code_channel: string;
-  verification_code_target: string;
-  verification_code_length: number;
-  resend_wait_time_seconds: number;
-  available_verification_code_channels: string[];
+  code: number;
+  message: string;
+  data: {
+    verification_token: string;
+    verification_code_channel: string;
+    verification_code_target: string;
+    verification_code_length: number;
+    resend_wait_time_seconds: number;
+    available_verification_code_channels: string[];
+  };
 }
 
 export interface ConfirmAuthRequest {
@@ -278,10 +282,18 @@ export interface ConfirmAuthRequest {
 }
 
 export interface ConfirmAuthResponse {
-  type: string;
-  token: {
-    refresh_token: string;
-    token_type: string;
+  code: number;
+  message: string;
+  data?: {
+    type: string;
+    token: {
+      refresh_token: string;
+      token_type: string;
+    };
+  };
+  error_data?: {
+    text?: string;
+    [key: string]: any;
   };
 }
 
@@ -289,6 +301,8 @@ export interface ConfirmAuthResponse {
 export interface Credentials {
   driver_id: string;
   session_id: string;
+  phone: string;
+  verification_token?: string;
 }
 
 // API Configuration

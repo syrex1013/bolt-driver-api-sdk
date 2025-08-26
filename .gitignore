@@ -101,3 +101,4 @@ playwright/.cache/
 *.har
 .example_requests
 .magic-link-token.json
+.bolt-token.json

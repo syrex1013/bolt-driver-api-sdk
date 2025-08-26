@@ -10,7 +10,8 @@ import {
   AuthConfig, 
   FileTokenStorage,
   LoggingConfig,
-  GpsInfo 
+  GpsInfo,
+  Credentials
 } from '../src';
 
 interface UserInput {
@@ -159,7 +160,30 @@ async function performAuthentication(boltAPI: BoltDriverAPI, userInput: UserInpu
   spinner.start(`Sending SMS to ${userInput.phoneNumber}...`);
   
   try {
-    const authResponse = await boltAPI.startAuthentication(userInput.phoneNumber);
+    // Create credentials object
+    const credentials: Credentials = {
+      driver_id: 'test_driver_id',
+      session_id: 'test_session_id'
+    };
+
+    // Create device info and auth config for this request
+    const deviceInfo: DeviceInfo = {
+      deviceId: generateDeviceId(),
+      deviceType: userInput.deviceType as 'iphone' | 'android',
+      deviceName: userInput.deviceType === 'iphone' ? 'iPhone17,3' : 'Samsung Galaxy S24',
+      deviceOsVersion: userInput.deviceType === 'iphone' ? 'iOS18.6' : 'Android 14',
+      appVersion: 'DI.116.0'
+    };
+
+    const authConfig: AuthConfig = {
+      authMethod: 'phone',
+      brand: 'bolt',
+      country: userInput.country,
+      language: userInput.language,
+      theme: 'dark'
+    };
+
+    const authResponse = await boltAPI.startAuthentication(authConfig, deviceInfo, credentials);
     spinner.succeed(chalk.green('SMS sent successfully'));
     
     console.log(boxen(
@@ -195,7 +219,7 @@ async function performAuthentication(boltAPI: BoltDriverAPI, userInput: UserInpu
 
     // Step 3: Confirm authentication
     spinner.start('Verifying SMS code...');
-    const confirmResponse = await boltAPI.confirmAuthentication(authResponse.verification_token, smsCode);
+    const confirmResponse = await boltAPI.confirmAuthentication(authConfig, deviceInfo, credentials, smsCode);
     spinner.succeed(chalk.green('SMS code verified successfully'));
     
     console.log(boxen(
@@ -291,7 +315,12 @@ function createSampleGpsInfo(): GpsInfo {
     bearing: 0,
     speed: -1.000007,
     timestamp: Math.floor(Date.now() / 1000),
-    age: 30.01
+    age: 30.01,
+    // Add missing required properties
+    accuracyMeters: 19.791364,
+    adjustedBearing: 0,
+    bearingAccuracyDeg: 10,
+    speedAccuracyMps: 0.5
   };
 }
 
