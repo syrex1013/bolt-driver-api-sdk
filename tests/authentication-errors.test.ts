@@ -20,7 +20,7 @@ const mockClient = {
 
 mockedAxios.create.mockReturnValue(mockClient as any);
 
-describe('BoltDriverAPI - Authentication Error Handling', () => {
+describe('Authentication Error Handling and Recovery', () => {
   let api: BoltDriverAPI;
   const deviceInfo: DeviceInfo = {
     deviceId: 'test-device-id',
@@ -47,7 +47,7 @@ describe('BoltDriverAPI - Authentication Error Handling', () => {
     api = new BoltDriverAPI(deviceInfo, authConfig);
   });
 
-  describe('🔔 SMS Limit Error (Code 299)', () => {
+  describe('SMS Rate Limiting Error Handling', () => {
     it('should throw SmsLimitError when SMS limit is reached', async () => {
       // Mock axios.post to simulate error response
       mockClient.post
@@ -263,7 +263,7 @@ describe('BoltDriverAPI - Authentication Error Handling', () => {
     });
   });
 
-  describe('❌ Invalid SMS Code Error (Code 293)', () => {
+  describe('Invalid SMS Code Error Handling', () => {
     it('should throw InvalidSmsCodeError for incorrect SMS code', async () => {
       // Mock successful startAuthentication
       mockClient.post.mockResolvedValueOnce({
@@ -341,7 +341,7 @@ describe('BoltDriverAPI - Authentication Error Handling', () => {
     });
   });
 
-  describe('🔄 Error Recovery and Retry Logic', () => {
+  describe('Error Recovery and Retry Mechanisms', () => {
     it('should handle multiple retry attempts for database errors', async () => {
       // Clear any previous mocks
       jest.clearAllMocks();

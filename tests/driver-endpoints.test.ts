@@ -19,7 +19,7 @@ const mockClient = {
 
 mockedAxios.create.mockReturnValue(mockClient as unknown as AxiosInstance);
 
-describe('BoltDriverAPI - Driver Endpoints', () => {
+describe('Driver Endpoints Integration Tests', () => {
   let api: BoltDriverAPI;
   const deviceInfo: DeviceInfo = {
     deviceId: 'test-device-id',
@@ -53,16 +53,16 @@ describe('BoltDriverAPI - Driver Endpoints', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    
+
     // Mock axios.create before creating the API instance
     mockedAxios.create.mockReturnValue(mockClient as unknown as AxiosInstance);
-    
+
     // Create API instance
     api = new BoltDriverAPI(deviceInfo, authConfig);
-    
+
     // Mock the ensureValidToken method to avoid token validation
     jest.spyOn(api as any, 'ensureValidToken').mockResolvedValue(undefined);
-    
+
     // Mock session info to avoid undefined errors
     Object.defineProperty(api, 'sessionInfo', {
       get: jest.fn().mockReturnValue({
@@ -81,7 +81,7 @@ describe('BoltDriverAPI - Driver Endpoints', () => {
     jest.restoreAllMocks();
   });
 
-  describe('📊 Data Retrieval Endpoints', () => {
+  describe('Data Retrieval Endpoints', () => {
     describe('getScheduledRideRequests', () => {
       it('should fetch scheduled ride requests successfully', async () => {
         const mockResponse: AxiosResponse<ApiResponse> = {
@@ -198,9 +198,9 @@ describe('BoltDriverAPI - Driver Endpoints', () => {
     });
   });
 
-  describe('ℹ️ Information Endpoints', () => {
+  describe('Support and Information Endpoints', () => {
     describe('getHelpDetails', () => {
-      it('should fetch help details', async () => {
+      it('should retrieve help and support information successfully', async () => {
         const mockResponse: AxiosResponse<ApiResponse> = {
           data: { code: 0, message: 'OK', data: { helpTopics: [] } },
           status: 200,
@@ -212,11 +212,12 @@ describe('BoltDriverAPI - Driver Endpoints', () => {
 
         const result = await api.getHelpDetails(testGpsInfo);
         expect(result.code).toBe(0);
+        expect(result.message).toBe('OK');
       });
     });
 
     describe('getEarnMoreDetails', () => {
-      it('should fetch earn more details', async () => {
+      it('should retrieve earning opportunities and promotions', async () => {
         const mockResponse: AxiosResponse<ApiResponse> = {
           data: { code: 0, message: 'OK', data: { opportunities: [] } },
           status: 200,
@@ -228,11 +229,12 @@ describe('BoltDriverAPI - Driver Endpoints', () => {
 
         const result = await api.getEarnMoreDetails(testGpsInfo);
         expect(result.code).toBe(0);
+        expect(result.message).toBe('OK');
       });
     });
 
     describe('getScoreOverview', () => {
-      it('should fetch driver score overview', async () => {
+      it('should retrieve driver performance metrics and ratings', async () => {
         const mockResponse: AxiosResponse<ApiResponse> = {
           data: { code: 0, message: 'OK', data: { score: 85, rating: 4.5 } },
           status: 200,
@@ -244,11 +246,12 @@ describe('BoltDriverAPI - Driver Endpoints', () => {
 
         const result = await api.getScoreOverview(testGpsInfo);
         expect(result.code).toBe(0);
+        expect(result.message).toBe('OK');
       });
     });
 
     describe('getDriverSidebar', () => {
-      it('should fetch driver sidebar information', async () => {
+      it('should retrieve driver interface navigation data', async () => {
         const mockResponse: AxiosResponse<ApiResponse> = {
           data: { code: 0, message: 'OK', data: { menuItems: [] } },
           status: 200,
@@ -260,12 +263,13 @@ describe('BoltDriverAPI - Driver Endpoints', () => {
 
         const result = await api.getDriverSidebar(testGpsInfo);
         expect(result.code).toBe(0);
+        expect(result.message).toBe('OK');
       });
     });
   });
 
-  describe('🛠️ Parameter Validation', () => {
-    it('should validate required parameters', async () => {
+  describe('Parameter Validation and Error Handling', () => {
+    it('should validate required parameters and reject invalid requests', async () => {
       // Mock the method to throw an error for invalid parameters
       jest.spyOn(api as any, 'buildRequestParams').mockImplementation(() => {
         throw new Error('Invalid parameters');
@@ -276,7 +280,7 @@ describe('BoltDriverAPI - Driver Endpoints', () => {
       await expect(api.getScheduledRideRequests(incompleteParams as any)).rejects.toThrow();
     });
 
-    it('should handle optional parameters correctly', async () => {
+    it('should handle optional parameters correctly in requests', async () => {
       const mockResponse: AxiosResponse<ApiResponse> = {
         data: { code: 0, message: 'OK', data: {} },
         status: 200,
@@ -291,8 +295,8 @@ describe('BoltDriverAPI - Driver Endpoints', () => {
     });
   });
 
-  describe('🔄 Response Handling', () => {
-    it('should handle successful responses', async () => {
+  describe('Response Processing and Error Recovery', () => {
+    it('should process successful API responses correctly', async () => {
       const mockData = { test: 'data' };
       const mockResponse: AxiosResponse<ApiResponse> = {
         data: { code: 0, message: 'OK', data: mockData },
@@ -308,7 +312,7 @@ describe('BoltDriverAPI - Driver Endpoints', () => {
       expect(result.data).toEqual(mockData);
     });
 
-    it('should handle non-zero response codes', async () => {
+    it('should handle non-zero response codes from API', async () => {
       const mockResponse: AxiosResponse<ApiResponse> = {
         data: { code: 1, message: 'Error', data: null },
         status: 200,
@@ -323,13 +327,13 @@ describe('BoltDriverAPI - Driver Endpoints', () => {
       expect(result.message).toBe('Error');
     });
 
-    it('should handle network errors gracefully', async () => {
+    it('should handle network errors gracefully with proper error propagation', async () => {
       mockClient.get.mockRejectedValueOnce(new Error('Network Error'));
       await expect(api.getScheduledRideRequests(testGpsInfo)).rejects.toThrow('Network Error');
     });
   });
 
-  describe('📝 Request Building', () => {
+  describe('Request Construction and Parameter Mapping', () => {
     it('should build correct query parameters', async () => {
       const mockResponse: AxiosResponse<ApiResponse> = {
         data: { code: 0, message: 'OK', data: {} },

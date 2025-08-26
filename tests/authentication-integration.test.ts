@@ -24,7 +24,7 @@ const mockAxiosInstance = {
 
 mockedAxios.create.mockReturnValue(mockAxiosInstance as any);
 
-describe('Enhanced BoltDriverAPI', () => {
+describe('Authentication Integration and Token Persistence', () => {
   let boltAPI: BoltDriverAPI;
   let mockDeviceInfo: DeviceInfo;
   let mockAuthConfig: AuthConfig;

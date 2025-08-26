@@ -17,7 +17,7 @@ jest.mock('axios', () => ({
   isAxiosError: jest.fn()
 }));
 
-describe('BoltDriverAPI', () => {
+describe('BoltDriverAPI Core Functionality', () => {
   let boltAPI: BoltDriverAPI;
   let mockDeviceInfo: DeviceInfo;
   let mockAuthConfig: AuthConfig;
@@ -64,17 +64,17 @@ describe('BoltDriverAPI', () => {
     boltAPI = new BoltDriverAPI(mockDeviceInfo, mockAuthConfig);
   });
 
-  describe('Constructor', () => {
-    it('should initialize with correct configuration', () => {
+  describe('Initialization and Configuration', () => {
+    it('should initialize API client with correct configuration', () => {
       expect(boltAPI).toBeInstanceOf(BoltDriverAPI);
     });
 
-    it('should set default configuration values', () => {
+    it('should set default configuration values during initialization', () => {
       const api = new BoltDriverAPI(mockDeviceInfo, mockAuthConfig);
       expect(api).toBeDefined();
     });
 
-    it('should accept custom configuration', () => {
+    it('should accept and apply custom configuration parameters', () => {
       const customConfig = {
         timeout: 60000,
         retries: 5
@@ -84,8 +84,8 @@ describe('BoltDriverAPI', () => {
     });
   });
 
-  describe('Utility Methods', () => {
-    it('should check authentication status', () => {
+  describe('Authentication State Management', () => {
+    it('should correctly determine authentication status', () => {
       expect(boltAPI.isAuthenticated()).toBe(false);
 
       // Mock authenticated state
@@ -94,7 +94,7 @@ describe('BoltDriverAPI', () => {
       expect(boltAPI.isAuthenticated()).toBe(true);
     });
 
-    it('should get session information', () => {
+    it('should retrieve current session information', () => {
       expect(boltAPI.getSessionInfo()).toBeUndefined();
 
       // Mock session info
@@ -103,7 +103,7 @@ describe('BoltDriverAPI', () => {
       expect(boltAPI.getSessionInfo()).toEqual(mockSessionInfo);
     });
 
-    it('should clear authentication', () => {
+    it('should clear authentication data and reset session state', () => {
       // Mock authenticated state
       (boltAPI as any).accessToken = 'test-token';
       (boltAPI as any).sessionInfo = { driverId: 123 };
@@ -115,8 +115,8 @@ describe('BoltDriverAPI', () => {
     });
   });
 
-  describe('GPS Info Management', () => {
-    it('should update GPS info', () => {
+  describe('GPS Information Management', () => {
+    it('should update GPS information for location tracking', () => {
       boltAPI.updateGpsInfo();
       // Note: This method currently doesn't store the GPS info, it just updates the internal state
       // The actual GPS info is passed to each API method call

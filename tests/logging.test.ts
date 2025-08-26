@@ -2,7 +2,7 @@ import { Logger } from '../src/Logger';
 import { promises as fs } from 'fs';
 import { join } from 'path';
 
-describe('Logger', () => {
+describe('Logging System Functionality', () => {
   let tempDir: string;
   let logFilePath: string;
 
@@ -20,7 +20,7 @@ describe('Logger', () => {
     }
   });
 
-  describe('Basic Logging', () => {
+  describe('Log Level Management and Output', () => {
     it('should log messages at appropriate levels', () => {
       const logger = new Logger({ enabled: true, level: 'info' });
       

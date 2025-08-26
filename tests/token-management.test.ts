@@ -3,15 +3,15 @@ import { SessionInfo } from '../src/types';
 import { promises as fs } from 'fs';
 import { join } from 'path';
 
-describe('TokenStorage', () => {
-  describe('MemoryTokenStorage', () => {
+describe('Token Storage and Session Management', () => {
+  describe('In-Memory Token Storage Implementation', () => {
     let storage: MemoryTokenStorage;
 
     beforeEach(() => {
       storage = new MemoryTokenStorage();
     });
 
-    it('should save and load token data', async () => {
+    it('should securely store and retrieve authentication tokens', async () => {
       const token = 'test-token-123';
       const sessionInfo: SessionInfo = {
         sessionId: 'session-123',
@@ -33,7 +33,7 @@ describe('TokenStorage', () => {
       expect(loaded!.sessionInfo).toEqual(sessionInfo);
     });
 
-    it('should clear token data', async () => {
+    it('should properly clear stored authentication data', async () => {
       const token = 'test-token-123';
       const sessionInfo: SessionInfo = {
         sessionId: 'session-123',
@@ -76,7 +76,7 @@ describe('TokenStorage', () => {
     });
   });
 
-  describe('FileTokenStorage', () => {
+  describe('File-Based Token Storage Implementation', () => {
     let storage: FileTokenStorage;
     let tempDir: string;
 
