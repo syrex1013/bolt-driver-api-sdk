@@ -1,6 +1,11 @@
-# Bolt Driver API
+# Bolt Driver API SDK
 
-Official Node.js SDK for Bolt Driver API - communicate with Bolt's driver platform like the mobile app.
+[![npm version](https://badge.fury.io/js/bolt-driver-api.svg)](https://badge.fury.io/js/bolt-driver-api)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.2+-blue.svg)](https://www.typescriptlang.org/)
+[![Node.js](https://img.shields.io/badge/Node.js-16+-green.svg)](https://nodejs.org/)
+
+Official Node.js SDK for Bolt Driver API - communicate with Bolt's driver platform like the mobile app. This SDK provides comprehensive access to Bolt's driver ecosystem, enabling developers to build powerful applications that integrate seamlessly with Bolt's ride-hailing platform.
 
 ## Features
 
@@ -24,9 +29,34 @@ Official Node.js SDK for Bolt Driver API - communicate with Bolt's driver platfo
 
 ## Installation
 
+### npm
 ```bash
 npm install bolt-driver-api
 ```
+
+### yarn
+```bash
+yarn add bolt-driver-api
+```
+
+### pnpm
+```bash
+pnpm add bolt-driver-api
+```
+
+## Documentation
+
+📚 **[Complete API Documentation](https://bolt-driver-api.github.io/bolt-driver-api-sdk/)** - Comprehensive guides, examples, and API reference
+
+🔗 **[Quick Start Guide](https://bolt-driver-api.github.io/bolt-driver-api-sdk/quick-start.html)** - Get up and running in minutes
+
+🛠️ **[API Reference](https://bolt-driver-api.github.io/bolt-driver-api-sdk/api/)** - Detailed TypeScript definitions and method documentation
+
+## Requirements
+
+- **Node.js**: >= 16.0.0
+- **TypeScript**: >= 5.2 (for development)
+- **npm/yarn/pnpm**: Latest stable version
 
 ## Quick Start
 

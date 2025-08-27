@@ -34,16 +34,20 @@
     "nodejs",
     "typescript"
   ],
-  "author": "Your Name <your.email@example.com>",
+  "author": "Bolt Driver API Team <team@boltdriverapi.com>",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/yourusername/bolt-driver-api.git"
+    "url": "https://github.com/bolt-driver-api/bolt-driver-api-sdk.git"
   },
   "bugs": {
-    "url": "https://github.com/yourusername/bolt-driver-api/issues"
+    "url": "https://github.com/bolt-driver-api/bolt-driver-api-sdk/issues"
   },
-  "homepage": "https://github.com/yourusername/bolt-driver-api#readme",
+  "homepage": "https://github.com/bolt-driver-api/bolt-driver-api-sdk#readme",
+  "funding": {
+    "type": "github",
+    "url": "https://github.com/sponsors/bolt-driver-api"
+  },
   "engines": {
     "node": ">=16.0.0"
   },

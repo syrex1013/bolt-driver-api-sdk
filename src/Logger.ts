@@ -3,14 +3,66 @@ import { join } from 'path';
 import { LoggingConfig, LogEntry } from './types';
 
 /**
- * Logger class for Bolt Driver API
- * Handles request/response logging with configurable levels and output
+ * Advanced logging utility for Bolt Driver API with configurable output destinations.
+ *
+ * The Logger provides comprehensive logging capabilities for debugging, monitoring, and
+ * troubleshooting API interactions. It supports multiple log levels, console and file
+ * output, request/response logging, and automatic log rotation.
+ *
+ * @example
+ * ```typescript
+ * // Basic usage with console logging
+ * const logger = new Logger({
+ *   enabled: true,
+ *   level: 'debug',
+ *   logRequests: true,
+ *   logResponses: true
+ * });
+ *
+ * logger.info('API initialized successfully');
+ * logger.error('Authentication failed', { error: 'Invalid credentials' });
+ *
+ * // File logging with custom path
+ * const fileLogger = new Logger({
+ *   enabled: true,
+ *   level: 'info',
+ *   logToFile: true,
+ *   logFilePath: '/var/log/bolt-api.log'
+ * });
+ * ```
+ *
+ * @since 1.0.0
+ * @author Bolt Driver API Team
  */
 export class Logger {
   private config: LoggingConfig;
   private logBuffer: LogEntry[] = [];
   private flushInterval: NodeJS.Timeout | null = null;
 
+  /**
+   * Creates a new Logger instance with the specified configuration.
+   *
+   * @param config - Partial logging configuration to customize logger behavior
+   *
+   * @example
+   * ```typescript
+   * // Minimal configuration
+   * const logger = new Logger({ enabled: true, level: 'debug' });
+   *
+   * // Full configuration with file logging
+   * const logger = new Logger({
+   *   enabled: true,
+   *   level: 'info',
+   *   logRequests: true,
+   *   logResponses: true,
+   *   logErrors: true,
+   *   logToFile: true,
+   *   logFilePath: '/var/log/my-app.log'
+   * });
+   * ```
+   *
+   * @since 1.0.0
+   */
   constructor(config: Partial<LoggingConfig> = {}) {
     this.config = {
       enabled: true,

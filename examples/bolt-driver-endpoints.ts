@@ -1,11 +1,7 @@
 #!/usr/bin/env ts-node
 
 import { BoltDriverAPI, FileTokenStorage } from "../src";
-import {
-  DeviceInfo,
-  AuthConfig,
-  GpsInfo,
-} from "../src/types";
+import { DeviceInfo, AuthConfig, GpsInfo } from "../src/types";
 import * as dotenv from "dotenv";
 import * as fs from "fs";
 import * as path from "path";
@@ -104,15 +100,21 @@ async function runBoltDriverExample() {
 
   // If no saved credentials, get them interactively
   if (!credentials) {
-    console.log(chalk.blue("\n🔑 No saved credentials found. Let's set up authentication..."));
+    console.log(
+      chalk.blue(
+        "\n🔑 No saved credentials found. Let's set up authentication..."
+      )
+    );
     credentials = await getCredentialsInteractively();
-    
+
     // Save the new credentials
     try {
       fs.writeFileSync(credentialsPath, JSON.stringify(credentials, null, 2));
       console.log(chalk.green("✅ Credentials saved for future use"));
     } catch (error) {
-      console.log(chalk.yellow("⚠️ Could not save credentials, but continuing..."));
+      console.log(
+        chalk.yellow("⚠️ Could not save credentials, but continuing...")
+      );
     }
   }
 
@@ -231,7 +233,7 @@ async function runBoltDriverExample() {
 
 async function getCredentialsInteractively(): Promise<any> {
   console.log(chalk.cyan("\n📱 Please provide your authentication details:\n"));
-  
+
   const answers = await inquirer.prompt([
     {
       type: "input",
@@ -243,7 +245,7 @@ async function getCredentialsInteractively(): Promise<any> {
           return true;
         }
         return "Please enter a valid phone number with country code (e.g., +48123456789)";
-      }
+      },
     },
     {
       type: "list",
@@ -259,9 +261,9 @@ async function getCredentialsInteractively(): Promise<any> {
         { name: "🇿🇦 South Africa", value: "za" },
         { name: "🇳🇬 Nigeria", value: "ng" },
         { name: "🇰🇪 Kenya", value: "ke" },
-        { name: "🇬🇭 Ghana", value: "gh" }
+        { name: "🇬🇭 Ghana", value: "gh" },
       ],
-      default: "pl"
+      default: "pl",
     },
     {
       type: "list",
@@ -274,9 +276,9 @@ async function getCredentialsInteractively(): Promise<any> {
         { name: "🇱🇻 Latvian", value: "lv-LV" },
         { name: "🇱🇹 Lithuanian", value: "lt-LT" },
         { name: "🇫🇮 Finnish", value: "fi-FI" },
-        { name: "🇺🇦 Ukrainian", value: "uk-UA" }
+        { name: "🇺🇦 Ukrainian", value: "uk-UA" },
       ],
-      default: "en-GB"
+      default: "en-GB",
     },
     {
       type: "list",
@@ -284,42 +286,45 @@ async function getCredentialsInteractively(): Promise<any> {
       message: "Select your device type:",
       choices: [
         { name: "📱 iPhone", value: "iphone" },
-        { name: "🤖 Android", value: "android" }
+        { name: "🤖 Android", value: "android" },
       ],
-      default: "iphone"
+      default: "iphone",
     },
     {
       type: "input",
       name: "driver_id",
       message: "Enter your driver ID (or press Enter for test_driver_id):",
-      default: "test_driver_id"
+      default: "test_driver_id",
     },
     {
       type: "input",
       name: "session_id",
       message: "Enter your session ID (or press Enter for test_session_id):",
-      default: "test_session_id"
-    }
+      default: "test_session_id",
+    },
   ]);
 
   return {
     ...answers,
     deviceId: generateDeviceId(),
-    deviceName: answers.deviceType === "iphone" ? "iPhone17,3" : "Samsung Galaxy S24",
+    deviceName:
+      answers.deviceType === "iphone" ? "iPhone17,3" : "Samsung Galaxy S24",
     deviceOsVersion: answers.deviceType === "iphone" ? "iOS18.6" : "Android 14",
     appVersion: "DI.115.0",
     authMethod: "phone",
     brand: "bolt",
-    theme: "dark"
+    theme: "dark",
   };
 }
 
 function generateDeviceId(): string {
-  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function(c) {
-    const r = Math.random() * 16 | 0;
-    const v = c === "x" ? r : (r & 0x3 | 0x8);
-    return v.toString(16);
-  }).toUpperCase();
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx"
+    .replace(/[xy]/g, function (c) {
+      const r = (Math.random() * 16) | 0;
+      const v = c === "x" ? r : (r & 0x3) | 0x8;
+      return v.toString(16);
+    })
+    .toUpperCase();
 }
 
 async function performAuthentication(
@@ -648,6 +653,11 @@ async function demonstrateApiMethods(api: BoltDriverAPI) {
   // Endpoints to demonstrate with their new signatures
   const endpointDemos = [
     {
+      name: "Driver Configuration",
+      method: "getLoggedInDriverConfiguration",
+      args: [gpsInfo],
+    },
+    {
       name: "Scheduled Ride Requests",
       method: "getScheduledRideRequests",
       args: [gpsInfo, "upcoming"],
@@ -694,11 +704,76 @@ async function demonstrateApiMethods(api: BoltDriverAPI) {
     try {
       logSection(`Fetching: ${endpoint.name}`);
 
-      const result = await (api as any)[endpoint.method](...endpoint.args);
+      const result = await (api as unknown)[endpoint.method](...endpoint.args);
 
       if (result && result.code === 0) {
         console.log(chalk.green("✓ Success"));
-        console.log(JSON.stringify(result.data, null, 2));
+
+        // Special handling for driver configuration
+        if (endpoint.method === "getLoggedInDriverConfiguration") {
+          const config = result.data || result;
+          console.log(chalk.blue("📋 Driver Configuration:"));
+          console.log(
+            chalk.green(
+              `   Driver ID: ${config.driver_info?.driver_id || "N/A"}`
+            )
+          );
+          console.log(
+            chalk.green(
+              `   Partner ID: ${config.driver_info?.partner_id || "N/A"}`
+            )
+          );
+          console.log(
+            chalk.green(
+              `   Company ID: ${config.driver_info?.company_id || "N/A"}`
+            )
+          );
+          console.log(
+            chalk.green(
+              `   Company City ID: ${
+                config.driver_info?.company_city_id || "N/A"
+              }`
+            )
+          );
+          console.log(
+            chalk.gray(
+              `   Name: ${config.driver_info?.first_name} ${
+                config.driver_info?.last_name || ""
+              }`
+            )
+          );
+          console.log(
+            chalk.gray(`   Email: ${config.driver_info?.email || "N/A"}`)
+          );
+          console.log(
+            chalk.gray(`   Phone: ${config.driver_info?.phone || "N/A"}`)
+          );
+          console.log(
+            chalk.gray(`   Company: ${config.company_info?.name || "N/A"}`)
+          );
+          console.log(
+            chalk.gray(`   Country: ${config.company_info?.country || "N/A"}`)
+          );
+          console.log(
+            chalk.gray(
+              `   Vehicle: ${config.vehicle_info?.make} ${
+                config.vehicle_info?.model || ""
+              }`
+            )
+          );
+          console.log(
+            chalk.gray(
+              `   License Plate: ${config.vehicle_info?.license_plate || "N/A"}`
+            )
+          );
+          console.log(
+            chalk.blue(
+              `   Available config keys: ${Object.keys(config).join(", ")}`
+            )
+          );
+        }
+
+        console.log(JSON.stringify(result.data || result, null, 2));
       } else if (result) {
         console.log(chalk.yellow("⚠ Non-zero response code"));
         console.log(JSON.stringify(result, null, 2));

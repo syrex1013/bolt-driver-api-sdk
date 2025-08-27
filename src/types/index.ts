@@ -1,56 +1,219 @@
 // Device and Platform Information
+
+/**
+ * Device information required for Bolt API authentication and requests.
+ *
+ * This interface defines the device-specific parameters that are sent with every API request
+ * to simulate a real mobile application. The Bolt API uses these parameters to identify
+ * the client device and provide appropriate responses.
+ *
+ * @example
+ * ```typescript
+ * const deviceInfo: DeviceInfo = {
+ *   deviceId: '550e8400-e29b-41d4-a716-446655440000',
+ *   deviceType: 'iphone',
+ *   deviceName: 'iPhone17,3',
+ *   deviceOsVersion: 'iOS18.6',
+ *   appVersion: 'DI.116.0'
+ * };
+ * ```
+ *
+ * @since 1.0.0
+ * @author Bolt Driver API Team
+ */
 export interface DeviceInfo {
+  /** Unique device identifier (UUID format recommended) */
   deviceId: string;
+  /** Device platform type */
   deviceType: "iphone" | "android";
+  /** Human-readable device model name */
   deviceName: string;
+  /** Operating system version (e.g., "iOS18.6", "Android14") */
   deviceOsVersion: string;
+  /** Bolt app version (e.g., "DI.116.0") */
   appVersion: string;
 }
 
 // GPS and Location Information
+
+/**
+ * GPS location information including coordinates, speed, and accuracy data.
+ *
+ * This interface defines the comprehensive GPS data structure used by Bolt's location-based
+ * services. It includes both raw GPS readings and processed values that are sent with
+ * location-aware API requests.
+ *
+ * @example
+ * ```typescript
+ * const gpsInfo: GpsInfo = {
+ *   latitude: 52.237049,
+ *   longitude: 21.017532,
+ *   accuracy: 5.0,
+ *   bearing: 90.5,
+ *   speed: 25.3,
+ *   timestamp: Math.floor(Date.now() / 1000),
+ *   age: 2.5,
+ *   accuracyMeters: 5.0,
+ *   adjustedBearing: 90.5,
+ *   bearingAccuracyDeg: 2.0,
+ *   speedAccuracyMps: 1.5
+ * };
+ * ```
+ *
+ * @since 1.0.0
+ * @author Bolt Driver API Team
+ */
 export interface GpsInfo {
+  /** Latitude in decimal degrees (-90 to 90) */
   latitude: number;
+  /** Longitude in decimal degrees (-180 to 180) */
   longitude: number;
+  /** GPS accuracy in meters */
   accuracy: number;
+  /** Bearing/direction in degrees (0-360) */
   bearing: number;
+  /** Speed in meters per second */
   speed: number;
+  /** Unix timestamp of GPS reading */
   timestamp: number;
+  /** Age of GPS data in seconds */
   age: number;
-  // Additional properties required by authenticateWithMagicLink
+  /** Accuracy in meters (alternative property) */
   accuracyMeters: number;
+  /** Bearing adjusted for device orientation */
   adjustedBearing: number;
+  /** Bearing accuracy in degrees */
   bearingAccuracyDeg: number;
+  /** Speed accuracy in meters per second */
   speedAccuracyMps: number;
 }
 
 // Authentication and Session
+
+/**
+ * Authentication configuration for Bolt API requests.
+ *
+ * This interface defines the authentication parameters that determine how the Bolt API
+ * client behaves, including the authentication method, regional settings, and UI theme.
+ *
+ * @example
+ * ```typescript
+ * const authConfig: AuthConfig = {
+ *   authMethod: 'phone',
+ *   brand: 'bolt',
+ *   country: 'pl',
+ *   language: 'en-GB',
+ *   theme: 'dark'
+ * };
+ * ```
+ *
+ * @since 1.0.0
+ * @author Bolt Driver API Team
+ */
 export interface AuthConfig {
+  /** Authentication method to use */
   authMethod: "phone" | "email";
+  /** Brand identifier (usually 'bolt') */
   brand: string;
+  /** Country code in ISO 3166-1 alpha-2 format (e.g., 'pl', 'de', 'fr') */
   country: string;
+  /** Language code in BCP 47 format (e.g., 'en-GB', 'pl-PL', 'de-DE') */
   language: string;
+  /** UI theme preference */
   theme: "light" | "dark";
 }
 
+/**
+ * Driver session information including authentication tokens and driver details.
+ *
+ * This interface contains all the information about an authenticated driver session,
+ * including tokens, driver identification, and associated company/partner information.
+ *
+ * @example
+ * ```typescript
+ * const sessionInfo: SessionInfo = {
+ *   sessionId: 'session-123456',
+ *   driverId: 789012,
+ *   partnerId: 345678,
+ *   companyId: 901234,
+ *   companyCityId: 567890,
+ *   accessToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+ *   refreshToken: 'refresh-token-123',
+ *   tokenType: 'driver',
+ *   expiresAt: Date.now() + 3600000
+ * };
+ * ```
+ *
+ * @since 1.0.0
+ * @author Bolt Driver API Team
+ */
 export interface SessionInfo {
+  /** Unique session identifier */
   sessionId: string;
+  /** Driver's unique identifier */
   driverId: number;
+  /** Partner company identifier */
   partnerId: number;
+  /** Company identifier */
   companyId: number;
+  /** Company city identifier */
   companyCityId: number;
+  /** JWT access token for API authentication */
   accessToken?: string;
+  /** Refresh token for obtaining new access tokens */
   refreshToken?: string;
+  /** Type of token (usually 'driver') */
   tokenType?: string;
+  /** Token expiration timestamp in milliseconds */
   expiresAt: number;
 }
 
 // API Response Types
+
+/**
+ * Standard API response wrapper used by all Bolt Driver API endpoints.
+ *
+ * All Bolt API responses follow this consistent structure, with a status code,
+ * human-readable message, and optional data payload. This wrapper provides
+ * a standardized way to handle both successful and error responses.
+ *
+ * @example
+ * ```typescript
+ * // Successful response
+ * const successResponse: ApiResponse<HomeScreenData> = {
+ *   code: 0,
+ *   message: 'OK',
+ *   data: {
+ *     earnings: { today: 25.50, week: 180.75 },
+ *     activity: { activeRides: 1, completedToday: 12 }
+ *   }
+ * };
+ *
+ * // Error response
+ * const errorResponse: ApiResponse = {
+ *   code: 293,
+ *   message: 'SMS_CODE_NOT_FOUND',
+ *   data: null,
+ *   error_data: { text: 'Invalid SMS code provided' }
+ * };
+ * ```
+ *
+ * @template T - The type of data contained in the response (optional)
+ * @since 1.0.0
+ * @author Bolt Driver API Team
+ */
 export interface ApiResponse<T = any> {
+  /** Response status code (0 for success, non-zero for errors) */
   code: number;
+  /** Human-readable status message */
   message: string;
+  /** Response data payload (can be null for errors) */
   data: T;
+  /** Optional error details for failed requests */
   error_data?: {
+    /** Human-readable error description */
     text?: string;
+    /** Additional error metadata */
     [key: string]: any;
   };
 }
@@ -346,6 +509,7 @@ export interface RequestParams {
   group_by?: string;
   limit?: number;
   offset?: number;
+  app_platform_provider?: string;
 }
 
 // Error Types

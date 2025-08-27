@@ -3,12 +3,53 @@ import { join } from 'path';
 import { TokenStorage, SessionInfo } from './types';
 
 /**
- * File-based token storage implementation
- * Stores authentication tokens and session information in a JSON file
+ * File-based token storage implementation for persistent authentication.
+ *
+ * This class provides secure, file-based storage for authentication tokens and session
+ * information. Tokens are automatically encrypted (if configured) and stored in JSON
+ * format with metadata including expiration times for automatic cleanup.
+ *
+ * @example
+ * ```typescript
+ * // Default file location (~/.bolt-token.json)
+ * const storage = new FileTokenStorage();
+ *
+ * // Custom file location
+ * const customStorage = new FileTokenStorage('/path/to/custom/token.json');
+ *
+ * // Save token after authentication
+ * await storage.saveToken('jwt-token-123', {
+ *   sessionId: 'session-123',
+ *   driverId: 456,
+ *   partnerId: 789,
+ *   companyId: 101,
+ *   companyCityId: 202,
+ *   expiresAt: Date.now() + 3600000
+ * });
+ * ```
+ *
+ * @since 1.0.0
+ * @author Bolt Driver API Team
  */
 export class FileTokenStorage implements TokenStorage {
   public filePath: string;
 
+  /**
+   * Creates a new FileTokenStorage instance.
+   *
+   * @param filePath - Optional custom path for the token file. Defaults to '.bolt-token.json' in the current working directory.
+   *
+   * @example
+   * ```typescript
+   * // Use default location
+   * const storage = new FileTokenStorage();
+   *
+   * // Use custom location
+   * const storage = new FileTokenStorage('/home/user/.config/my-app-tokens.json');
+   * ```
+   *
+   * @since 1.0.0
+   */
   constructor(filePath?: string) {
     this.filePath = filePath || join(process.cwd(), '.bolt-token.json');
   }
@@ -80,23 +121,79 @@ export class FileTokenStorage implements TokenStorage {
 }
 
 /**
- * Memory-based token storage for testing or temporary use
+ * In-memory token storage implementation for testing and temporary sessions.
+ *
+ * This lightweight storage implementation holds authentication tokens and session
+ * information in memory only. It's ideal for testing scenarios, short-lived sessions,
+ * or environments where persistent storage is not required or desired.
+ *
+ * **Note:** Tokens stored in memory are lost when the application restarts.
+ * For production use, consider {@link FileTokenStorage} for persistent storage.
+ *
+ * @example
+ * ```typescript
+ * const storage = new MemoryTokenStorage();
+ *
+ * // Save token (stored in memory only)
+ * await storage.saveToken('jwt-token-123', {
+ *   sessionId: 'session-123',
+ *   driverId: 456,
+ *   partnerId: 789,
+ *   companyId: 101,
+ *   companyCityId: 202,
+ *   expiresAt: Date.now() + 3600000
+ * });
+ *
+ * // Token is available until application restart
+ * const token = await storage.loadToken();
+ * ```
+ *
+ * @since 1.0.0
+ * @author Bolt Driver API Team
+ * @see {@link FileTokenStorage} - For persistent token storage
  */
 export class MemoryTokenStorage implements TokenStorage {
   private tokenData: { token: string; sessionInfo: SessionInfo } | null = null;
 
+  /**
+   * Stores the authentication token and session information in memory.
+   *
+   * @param token - The JWT authentication token
+   * @param sessionInfo - Complete session information including driver and company details
+   *
+   * @since 1.0.0
+   */
   async saveToken(token: string, sessionInfo: SessionInfo): Promise<void> {
     this.tokenData = { token, sessionInfo };
   }
 
+  /**
+   * Retrieves the stored authentication token and session information.
+   *
+   * @returns The stored token data if available, null otherwise
+   *
+   * @since 1.0.0
+   */
   async loadToken(): Promise<{ token: string; sessionInfo: SessionInfo } | null> {
     return this.tokenData;
   }
 
+  /**
+   * Clears the stored authentication token and session information from memory.
+   *
+   * @since 1.0.0
+   */
   async clearToken(): Promise<void> {
     this.tokenData = null;
   }
 
+  /**
+   * Checks if a valid authentication token is currently stored.
+   *
+   * @returns True if a token exists in memory, false otherwise
+   *
+   * @since 1.0.0
+   */
   async hasValidToken(): Promise<boolean> {
     return this.tokenData !== null;
   }

@@ -147,13 +147,143 @@ export async function authExample() {
     // Initialize API
     const spinner = ora('Initializing Bolt Driver API...').start();
     const boltAPI = new BoltDriverAPI(deviceInfo, authConfig);
+
+    // Test JWT parsing with the HAR token
+    const testToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJkYXRhIjp7ImRyaXZlcl9pZCI6NzUzNDU5MiwicGFydG5lcl9pZCI6MTEyMjg0MjYsImNvbXBhbnlfaWQiOjEzNz76LCJjb21wYW55X2NpdHlfaWQiOjQ2NSwibWFuYWdlZF9ieV9mbGVldF9vd25lciI6MCwiZHJpdmVyX2Nhbl9hZGRfY2FycyI6MSwiYmxvY2tlZF91bnRpbCI6bnVsbCwiYXBwX3ZlcnNpb24iOiJESS4xMTYuMCIsImFwcF92ZXJpZmljYXRpb24iOnsic3RhdHVzIjoicGFzc2VkIiwiYXBwX3N0b3JlIjoiYXBwbGUifSwibmV4dF9ibG9ja19zdGFydCI6MTg3Nzg4ODYwMH0sImlhdCI6MTc1NTg2NzkyOSwiZXhwIjoxNzU1ODY4MjI5fQ.6QtLobSCslVHHeg0-SLpluHJpW4S-yecZcu3iOfZMYA';
+
+    try {
+      console.log(chalk.yellow('\n🔧 Testing JWT parsing with HAR token...'));
+      const sessionInfo = (boltAPI as any).extractSessionInfoFromJWT(testToken);
+      console.log(chalk.green('✅ JWT parsing successful:'));
+      console.log(`   ${chalk.gray('Driver ID:')} ${sessionInfo.driverId}`);
+      console.log(`   ${chalk.gray('Partner ID:')} ${sessionInfo.partnerId}`);
+      console.log(`   ${chalk.gray('Company ID:')} ${sessionInfo.companyId}`);
+      console.log(`   ${chalk.gray('Company City ID:')} ${sessionInfo.companyCityId}`);
+      console.log(`   ${chalk.gray('Expires:')} ${new Date(sessionInfo.expiresAt).toISOString()}`);
+    } catch (error) {
+      console.log(chalk.red('❌ JWT parsing failed:'), error instanceof Error ? error.message : String(error));
+    }
+
     spinner.succeed(chalk.green('API initialized successfully'));
 
-    // Check if we already have a valid token
-    if (savedToken && boltAPI.isAuthenticated()) {
-      console.log(chalk.green('\n✅ Already authenticated with valid token'));
-      await showAuthSuccess(boltAPI);
-      return;
+    // Check if we have saved tokens that are still valid
+    spinner.start('Checking for valid saved authentication...');
+    try {
+      const isValidToken = await boltAPI.validateToken();
+      if (isValidToken && boltAPI.isAuthenticated()) {
+        spinner.succeed(chalk.green('✅ Valid saved authentication found!'));
+
+        // Get and display current driver information
+        const sessionInfo = boltAPI.getSessionInfo();
+        if (sessionInfo) {
+          console.log(chalk.cyan('\n👤 Driver Information (from saved token):'));
+          console.log(`   ${chalk.gray('Driver ID:')} ${sessionInfo.driverId}`);
+          console.log(`   ${chalk.gray('Partner ID:')} ${sessionInfo.partnerId}`);
+          console.log(`   ${chalk.gray('Company ID:')} ${sessionInfo.companyId}`);
+          console.log(`   ${chalk.gray('Company City ID:')} ${sessionInfo.companyCityId}`);
+          console.log(`   ${chalk.gray('Session ID:')} ${sessionInfo.sessionId.substring(0, 20)}...`);
+          console.log(`   ${chalk.gray('Expires:')} ${new Date(sessionInfo.expiresAt).toLocaleString()}`);
+        }
+
+        // Try to get fresh driver data from API
+        try {
+          console.log(chalk.blue('\n🔄 Fetching current driver data...'));
+          const driverState = await boltAPI.getDriverState({
+            latitude: 51.233234,
+            longitude: 22.518391,
+            accuracy: 15,
+            accuracyMeters: 15,
+            speed: 0,
+            timestamp: Math.floor(Date.now() / 1000),
+            age: 30,
+            bearing: 0,
+            adjustedBearing: 0,
+            bearingAccuracyDeg: 0,
+            speedAccuracyMps: 1.8
+          }, 'background');
+
+          if (driverState) {
+            console.log(chalk.green('✅ Current driver state retrieved!'));
+            console.log(`   ${chalk.gray('Status:')} ${driverState.driverState || 'Unknown'}`);
+            console.log(`   ${chalk.gray('Orders:')} ${driverState.orders?.length || 0} active orders`);
+          }
+        } catch (driverError) {
+          console.log(chalk.yellow('⚠️  Could not fetch current driver state (this is optional)'));
+        }
+
+        // Try to get driver configuration
+        try {
+          const driverConfig = await boltAPI.getLoggedInDriverConfiguration({
+            latitude: 51.233234,
+            longitude: 22.518391,
+            accuracy: 15,
+            accuracyMeters: 15,
+            speed: 0,
+            timestamp: Math.floor(Date.now() / 1000),
+            age: 30,
+            bearing: 0,
+            adjustedBearing: 0,
+            bearingAccuracyDeg: 0,
+            speedAccuracyMps: 1.8
+          });
+
+          if (driverConfig) {
+            console.log(chalk.green('✅ Driver configuration retrieved!'));
+
+            // Display raw driver config data for debugging
+            console.log(chalk.gray('   Raw driver config:'), JSON.stringify(driverConfig, null, 2));
+
+            if (driverConfig.driver_info) {
+              console.log(`   ${chalk.gray('Name:')} ${driverConfig.driver_info.first_name || 'N/A'} ${driverConfig.driver_info.last_name || ''}`);
+              console.log(`   ${chalk.gray('Email:')} ${driverConfig.driver_info.email || 'N/A'}`);
+              console.log(`   ${chalk.gray('Phone:')} ${driverConfig.driver_info.phone || 'N/A'}`);
+            }
+            if (driverConfig.company_info) {
+              console.log(`   ${chalk.gray('Company:')} ${driverConfig.company_info.name || 'N/A'}`);
+              console.log(`   ${chalk.gray('Country:')} ${driverConfig.company_info.country || 'N/A'}`);
+            }
+            if (driverConfig.vehicle_info) {
+              console.log(`   ${chalk.gray('Vehicle:')} ${driverConfig.vehicle_info.make || 'N/A'} ${driverConfig.vehicle_info.model || ''}`);
+              console.log(`   ${chalk.gray('License Plate:')} ${driverConfig.vehicle_info.license_plate || 'N/A'}`);
+            }
+          }
+        } catch (configError) {
+          console.log(chalk.yellow('⚠️  Could not fetch driver configuration (this is optional)'));
+        }
+
+        console.log(chalk.green('\n🎉 Successfully restored authentication from saved token!'));
+        console.log(chalk.gray('   No SMS verification required - using existing valid token'));
+
+        // Display final authentication status
+        console.log('\n╔═══════════════════════════════════╗');
+        console.log('║                                   ║');
+        console.log('║   ✅ Authentication Successful!   ║');
+        console.log('║                                   ║');
+        console.log('╚═══════════════════════════════════╝');
+
+        console.log(chalk.cyan('\n📋 Authentication Status:'));
+        console.log(`   ${chalk.green('Authenticated: ✅ Yes')}`);
+        console.log(`   ${chalk.gray('Driver ID:')} ${sessionInfo?.driverId || 'N/A'}`);
+        console.log(`   ${chalk.gray('Partner ID:')} ${sessionInfo?.partnerId || 'N/A'}`);
+        console.log(`   ${chalk.gray('Company City ID:')} ${sessionInfo?.companyCityId || 'N/A'}`);
+
+        console.log('\n╭────────────────────────────────────────────────────────────────────────────────────────╮');
+        console.log('│                                                                                        │');
+        console.log('│   🎉 Authentication Flow Completed Successfully!                                       │');
+        console.log('│                                                                                        │');
+        console.log('│   You can now use the authenticated API instance to make requests to the Bolt Driver   │');
+        console.log('│   API.                                                                                 │');
+        console.log('│                                                                                        │');
+        console.log('╰────────────────────────────────────────────────────────────────────────────────────────╯');
+
+        return;
+      } else {
+        spinner.fail(chalk.yellow('❌ Saved authentication expired or invalid'));
+        console.log(chalk.gray('   Proceeding with fresh authentication...'));
+      }
+    } catch (error) {
+      spinner.fail(chalk.yellow('❌ No valid saved authentication found'));
+      console.log(chalk.gray('   Proceeding with fresh authentication...'));
     }
 
     // Test network connectivity
@@ -450,52 +580,133 @@ async function showAuthSuccess(boltAPI: BoltDriverAPI) {
       console.log(chalk.yellow('⚠️  Could not extract driver info from JWT token'));
     }
 
-    // Try to fetch real driver configuration from the API
+    // Try to validate the token and get fresh driver data
     try {
-      console.log(chalk.blue('\n🔍 Fetching real driver configuration...'));
-      const driverConfig = await boltAPI.getLoggedInDriverConfiguration({
-        latitude: 51.233234,
-        longitude: 22.518391,
-        accuracy: 15,
-        accuracyMeters: 15,
-        speed: 0,
-        timestamp: Math.floor(Date.now() / 1000),
-        bearing: 0,
-        adjustedBearing: 0,
-        age: 30,
-        bearingAccuracyDeg: 0,
-        speedAccuracyMps: 1.8
-      });
+      console.log(chalk.blue('\n🔍 Validating token with API endpoint...'));
 
-      if (driverConfig && driverConfig.code === 0 && driverConfig.data?.user) {
-        const user = driverConfig.data.user;
-        realDriverId = user.id?.toString() || 'N/A';
-        realPartnerId = user.partner_id?.toString() || 'N/A';
-        realCompanyCityId = user.company_id?.toString() || 'N/A';
-        
-        console.log(chalk.green('✅ Real driver data fetched successfully!'));
-        console.log(chalk.gray(`   Driver ID: ${realDriverId}`));
-        console.log(chalk.gray(`   Partner ID: ${realPartnerId}`));
-        console.log(chalk.gray(`   Company ID: ${realCompanyCityId}`));
-      } else {
-        console.log(chalk.yellow('⚠️  Driver configuration response format unexpected'));
-        if (driverConfig) {
-          console.log(chalk.gray('   Response code:', driverConfig.code || 'undefined'));
-          console.log(chalk.gray('   Response message:', driverConfig.message || 'undefined'));
-          console.log(chalk.gray('   Has data:', !!driverConfig.data));
-          if (driverConfig.data) {
-            console.log(chalk.gray('   Has user:', !!driverConfig.data.user));
-            console.log(chalk.gray('   Available data keys:', Object.keys(driverConfig.data).join(', ')));
+      // Use the validateToken method which uses getDriverState
+      const isValidToken = await boltAPI.validateToken();
+
+      if (isValidToken) {
+        console.log(chalk.green('✅ Token validated successfully with API!'));
+
+        // Try to get driver state which shows current driver information
+        try {
+          const driverState = await boltAPI.getDriverState({
+            latitude: 51.233234,
+            longitude: 22.518391,
+            accuracy: 15,
+            accuracyMeters: 15,
+            speed: 0,
+            timestamp: Math.floor(Date.now() / 1000),
+            age: 30,
+            bearing: 0,
+            adjustedBearing: 0,
+            bearingAccuracyDeg: 0,
+            speedAccuracyMps: 1.8
+          }, 'background');
+
+          if (driverState) {
+            console.log(chalk.green('✅ Current driver state retrieved!'));
+            console.log(chalk.gray(`   Status: ${driverState.driverState || 'Unknown'}`));
+            console.log(chalk.gray(`   Active orders: ${driverState.orders?.length || 0}`));
+            console.log(chalk.gray(`   Take new orders: ${driverState.takeNewOrdersDuringOrder ? 'Yes' : 'No'}`));
+            console.log(chalk.gray(`   Order acceptance: ${driverState.orderAcceptance || 'Unknown'}`));
           }
-        } else {
-          console.log(chalk.gray('   No response data received'));
+        } catch (stateError) {
+          console.log(chalk.yellow('⚠️  Could not fetch driver state (this is optional)'));
         }
+
+        // Try to get driver configuration
+        try {
+          const driverConfig = await boltAPI.getLoggedInDriverConfiguration({
+            latitude: 51.233234,
+            longitude: 22.518391,
+            accuracy: 15,
+            accuracyMeters: 15,
+            speed: 0,
+            timestamp: Math.floor(Date.now() / 1000),
+            age: 30,
+            bearing: 0,
+            adjustedBearing: 0,
+            bearingAccuracyDeg: 0,
+            speedAccuracyMps: 1.8
+          });
+
+          if (driverConfig) {
+            console.log(chalk.green('✅ Driver configuration retrieved!'));
+
+            // Display driver information if available
+            if (driverConfig.driver_info) {
+              console.log(`   ${chalk.gray('Name:')} ${driverConfig.driver_info.first_name || 'N/A'} ${driverConfig.driver_info.last_name || ''}`);
+              console.log(`   ${chalk.gray('Email:')} ${driverConfig.driver_info.email || 'N/A'}`);
+              console.log(`   ${chalk.gray('Phone:')} ${driverConfig.driver_info.phone || 'N/A'}`);
+            }
+            if (driverConfig.company_info) {
+              console.log(`   ${chalk.gray('Company:')} ${driverConfig.company_info.name || 'N/A'}`);
+              console.log(`   ${chalk.gray('Country:')} ${driverConfig.company_info.country || 'N/A'}`);
+            }
+            if (driverConfig.vehicle_info) {
+              console.log(`   ${chalk.gray('Vehicle:')} ${driverConfig.vehicle_info.make || 'N/A'} ${driverConfig.vehicle_info.model || ''}`);
+              console.log(`   ${chalk.gray('License Plate:')} ${driverConfig.vehicle_info.license_plate || 'N/A'}`);
+            }
+
+            // Log configuration keys for debugging
+            console.log(chalk.gray(`   Available config keys: ${Object.keys(driverConfig).join(', ')}`));
+          } else {
+            console.log(chalk.yellow('⚠️  Empty driver configuration response'));
+          }
+        } catch (configError) {
+          console.log(chalk.yellow(`⚠️  Could not fetch driver configuration: ${configError instanceof Error ? configError.message : 'Unknown error'}`));
+          console.log(chalk.gray('   This is optional and may indicate authentication issues'));
+        }
+
+        // Try to get home screen data
+        try {
+          const homeScreen = await boltAPI.getDriverHomeScreen({
+            latitude: 51.233234,
+            longitude: 22.518391,
+            accuracy: 15,
+            accuracyMeters: 15,
+            speed: 0,
+            timestamp: Math.floor(Date.now() / 1000),
+            age: 30,
+            bearing: 0,
+            adjustedBearing: 0,
+            bearingAccuracyDeg: 0,
+            speedAccuracyMps: 1.8
+          });
+
+          if (homeScreen) {
+            console.log(chalk.green('✅ Driver home screen data fetched successfully!'));
+
+            // Find earnings tile from items
+            const earningsTile = homeScreen.items?.find(item =>
+              item.type === 'tile' && item.payload?.title === "Today's earnings"
+            );
+            const earningsText = earningsTile?.payload?.value_text || 'N/A';
+            console.log(chalk.gray(`   Earnings today: ${earningsText}`));
+
+            // Show additional driver information
+            const pollInterval = homeScreen.pollIntervalSec;
+            console.log(chalk.gray(`   Poll interval: ${pollInterval ? `${pollInterval}s` : 'N/A'}`));
+            console.log(chalk.gray(`   Total items: ${(homeScreen.items?.length || 0)}`));
+
+            // Log layout information if available
+            if (homeScreen.layout) {
+              console.log(chalk.gray(`   Layout: ${homeScreen.layout.maxRow}x${homeScreen.layout.maxColumn}`));
+            }
+          }
+        } catch (homeError) {
+          console.log(chalk.yellow('⚠️  Could not fetch home screen data (this is optional)'));
+        }
+      } else {
+        console.log(chalk.yellow('⚠️  Token validation failed'));
       }
     } catch (error) {
-      console.log(chalk.yellow('⚠️  Could not fetch real driver configuration'));
-      console.log(chalk.gray('   The driver configuration endpoint requires different authentication'));
-      console.log(chalk.gray('   than the partner driver service used for login'));
-      console.log(chalk.gray('   This is normal and doesn\'t affect the authentication flow'));
+      console.log(chalk.yellow('⚠️  Could not validate token with API'));
+      console.log(chalk.gray('   This may indicate the token is invalid or expired'));
+      console.log(chalk.gray(`   Error: ${error instanceof Error ? error.message : 'Unknown error'}`));
     }
 
     // Display authentication success
@@ -516,6 +727,10 @@ async function showAuthSuccess(boltAPI: BoltDriverAPI) {
     
     console.log('║                                   ║');
     console.log('╚═══════════════════════════════════╝');
+
+    // Debug: Check driver info from API
+    const debugDriverInfo = boltAPI.getDriverInfo();
+    console.log(chalk.yellow('\n🔧 Debug Driver Info:'), JSON.stringify(debugDriverInfo, null, 2));
 
     // Display authentication status
     console.log('\n📋 Authentication Status:');
@@ -709,6 +924,93 @@ function generateDeviceId(): string {
   }).toUpperCase();
 }
 
+// Export the JWT test function so it can be called independently
+export async function testJWTParsing() {
+  console.log(chalk.cyan('\n╔═══════════════════════════════════╗'));
+  console.log(chalk.cyan('║                                   ║'));
+  console.log(chalk.cyan('║   🔧 JWT Parsing Test             ║'));
+  console.log(chalk.cyan('║                                   ║'));
+  console.log(chalk.cyan('╚═══════════════════════════════════╝'));
+
+  // Device information
+  const deviceInfo: DeviceInfo = {
+    deviceId: 'TEST-DEVICE-ID',
+    deviceType: 'iphone' as 'iphone' | 'android',
+    deviceName: 'iPhone Test',
+    deviceOsVersion: 'iOS18.6',
+    appVersion: 'DI.116.0'
+  };
+
+  // Authentication configuration
+  const authConfig: AuthConfig = {
+    authMethod: 'phone',
+    brand: 'bolt',
+    country: 'pl',
+    language: 'en-GB',
+    theme: 'dark'
+  };
+
+  try {
+    const boltAPI = new BoltDriverAPI(deviceInfo, authConfig);
+
+    // Test JWT parsing with a minimal JWT token that matches the expected structure
+    const header = btoa(JSON.stringify({alg: 'HS256', typ: 'JWT'}));
+    const payload = btoa(JSON.stringify({
+      data: {
+        driver_id: 7534592,
+        partner_id: 11228426,
+        company_id: 13776,
+        company_city_id: 465,
+        managed_by_fleet_owner: 0,
+        driver_can_add_cars: 1,
+        blocked_until: null,
+        app_version: "DI.116.0",
+        app_verification: {status: "passed", app_store: "apple"},
+        next_block_start: 1877888600
+      },
+      iat: 1756267929,
+      exp: 1756268229
+    }));
+    const testToken = `${header}.${payload}.signature`;
+
+    console.log(chalk.yellow('\n🔧 Testing JWT parsing with HAR token...'));
+    const sessionInfo = (boltAPI as any).extractSessionInfoFromJWT(testToken);
+
+    console.log(chalk.green('✅ JWT parsing successful:'));
+    console.log(`   ${chalk.gray('Driver ID:')} ${sessionInfo.driverId}`);
+    console.log(`   ${chalk.gray('Partner ID:')} ${sessionInfo.partnerId}`);
+    console.log(`   ${chalk.gray('Company ID:')} ${sessionInfo.companyId}`);
+    console.log(`   ${chalk.gray('Company City ID:')} ${sessionInfo.companyCityId}`);
+    console.log(`   ${chalk.gray('Expires:')} ${new Date(sessionInfo.expiresAt).toISOString()}`);
+
+    // Test setting the driver info
+    boltAPI['driverInfo'] = {
+      driverId: sessionInfo.driverId,
+      partnerId: sessionInfo.partnerId,
+      companyId: sessionInfo.companyId,
+      companyCityId: sessionInfo.companyCityId
+    };
+
+    const driverInfo = boltAPI.getDriverInfo();
+    console.log(chalk.green('\n✅ Driver info set successfully:'));
+    console.log(`   ${chalk.gray('Driver ID:')} ${driverInfo?.driverId}`);
+    console.log(`   ${chalk.gray('Partner ID:')} ${driverInfo?.partnerId}`);
+    console.log(`   ${chalk.gray('Company ID:')} ${driverInfo?.companyId}`);
+    console.log(`   ${chalk.gray('Company City ID:')} ${driverInfo?.companyCityId}`);
+
+  } catch (error) {
+    console.log(chalk.red('❌ JWT Test Error:'), error instanceof Error ? error.message : String(error));
+  }
+}
+
 if (require.main === module) {
-  authExample().catch(console.error);
+  // Check if --test-jwt flag is passed
+  if (process.argv.includes('--test-jwt')) {
+    testJWTParsing().then(() => process.exit(0));
+  } else {
+    authExample().catch((error) => {
+      console.error('❌ Application Error:', error);
+      process.exit(1);
+    });
+  }
 }
