@@ -91,12 +91,13 @@ describe('Driver Endpoints Integration Tests', () => {
           headers: {},
           config: {} as any
         };
-        mockClient.get.mockResolvedValueOnce(mockResponse);
+        mockClient.post.mockResolvedValueOnce(mockResponse);
 
         const result = await api.getScheduledRideRequests(testGpsInfo);
-        expect(result.code).toBe(0);
-        expect(mockClient.get).toHaveBeenCalledWith(
+        expect(result).toEqual({ code: 0, message: 'OK', data: { scheduledRides: [] } });
+        expect(mockClient.post).toHaveBeenCalledWith(
           expect.stringContaining('getScheduledRideRequests'),
+          {}, // Empty request body for POST
           expect.objectContaining({
             params: expect.objectContaining({
               brand: 'bolt',
@@ -109,7 +110,7 @@ describe('Driver Endpoints Integration Tests', () => {
       });
 
       it('should handle API errors', async () => {
-        mockClient.get.mockRejectedValueOnce(new Error('API Error'));
+        mockClient.post.mockRejectedValueOnce(new Error('API Error'));
         await expect(api.getScheduledRideRequests(testGpsInfo)).rejects.toThrow();
       });
     });
@@ -288,10 +289,10 @@ describe('Driver Endpoints Integration Tests', () => {
         headers: {},
         config: {} as any
       };
-      mockClient.get.mockResolvedValueOnce(mockResponse);
+      mockClient.post.mockResolvedValueOnce(mockResponse);
 
       const result = await api.getScheduledRideRequests(testGpsInfo);
-      expect(result.code).toBe(0);
+      expect(result).toEqual({ code: 0, message: 'OK', data: {} });
     });
   });
 
@@ -305,11 +306,10 @@ describe('Driver Endpoints Integration Tests', () => {
         headers: {},
         config: {} as any
       };
-      mockClient.get.mockResolvedValueOnce(mockResponse);
+      mockClient.post.mockResolvedValueOnce(mockResponse);
 
       const result = await api.getScheduledRideRequests(testGpsInfo);
-      expect(result.code).toBe(0);
-      expect(result.data).toEqual(mockData);
+      expect(result).toEqual({ code: 0, message: 'OK', data: mockData });
     });
 
     it('should handle non-zero response codes from API', async () => {
@@ -320,15 +320,13 @@ describe('Driver Endpoints Integration Tests', () => {
         headers: {},
         config: {} as any
       };
-      mockClient.get.mockResolvedValueOnce(mockResponse);
+      mockClient.post.mockResolvedValueOnce(mockResponse);
 
-      const result = await api.getScheduledRideRequests(testGpsInfo);
-      expect(result.code).toBe(1);
-      expect(result.message).toBe('Error');
+      await expect(api.getScheduledRideRequests(testGpsInfo)).rejects.toThrow('API returned error code 1: Error');
     });
 
     it('should handle network errors gracefully with proper error propagation', async () => {
-      mockClient.get.mockRejectedValueOnce(new Error('Network Error'));
+      mockClient.post.mockRejectedValueOnce(new Error('Network Error'));
       await expect(api.getScheduledRideRequests(testGpsInfo)).rejects.toThrow('Network Error');
     });
   });
@@ -342,12 +340,13 @@ describe('Driver Endpoints Integration Tests', () => {
         headers: {},
         config: {} as any
       };
-      mockClient.get.mockResolvedValueOnce(mockResponse);
+      mockClient.post.mockResolvedValueOnce(mockResponse);
 
       await api.getScheduledRideRequests(testGpsInfo);
 
-      expect(mockClient.get).toHaveBeenCalledWith(
+      expect(mockClient.post).toHaveBeenCalledWith(
         expect.stringContaining('getScheduledRideRequests'),
+        {}, // Empty request body for POST
         expect.objectContaining({
           params: expect.objectContaining({
             brand: 'bolt',
@@ -367,12 +366,13 @@ describe('Driver Endpoints Integration Tests', () => {
         headers: {},
         config: {} as any
       };
-      mockClient.get.mockResolvedValueOnce(mockResponse);
+      mockClient.post.mockResolvedValueOnce(mockResponse);
 
       await api.getScheduledRideRequests(testGpsInfo);
 
-      expect(mockClient.get).toHaveBeenCalledWith(
+      expect(mockClient.post).toHaveBeenCalledWith(
         expect.stringContaining('getScheduledRideRequests'),
+        {}, // Empty request body for POST
         expect.objectContaining({
           params: expect.objectContaining({
             gps_lat: testGpsInfo.latitude,

@@ -2401,11 +2401,10 @@ export class BoltDriverAPI {
 
   /**
    * Get logged in driver configuration including real IDs and profile information
-   * @param gpsInfo - GPS information for the request (not used, kept for API compatibility)
    * @returns Promise resolving to driver configuration
    * @throws {BoltApiError} When the request fails
    */
-  async getLoggedInDriverConfiguration(_gpsInfo: GpsInfo): Promise<any> {
+  async getLoggedInDriverConfiguration(): Promise<any> {
     try {
       this.logger.info("Getting logged in driver configuration");
 

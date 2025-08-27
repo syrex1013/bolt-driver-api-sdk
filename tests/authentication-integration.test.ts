@@ -256,13 +256,9 @@ describe('Authentication Integration and Token Persistence', () => {
 
         mockAxiosInstance.get.mockResolvedValueOnce(mockResponse);
 
-        const result = await boltAPI.getOtherActiveDrivers(mockGpsInfo);
-
-        expect(result).toEqual({
-          code: 0,
-          message: 'OK',
-          data: { list: [] }
-        });
+                const result = await boltAPI.getOtherActiveDrivers(mockGpsInfo);
+        
+        expect(result).toEqual({ code: 0, message: 'OK', data: { list: [] } });
         expect(mockAxiosInstance.get).toHaveBeenCalledWith(
           'https://node.bolt.eu/search/driver/getOtherActiveDrivers',
           expect.objectContaining({

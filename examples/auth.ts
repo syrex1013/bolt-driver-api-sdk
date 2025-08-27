@@ -213,19 +213,7 @@ export async function authExample() {
 
         // Try to get driver configuration
         try {
-          const driverConfig = await boltAPI.getLoggedInDriverConfiguration({
-            latitude: 51.233234,
-            longitude: 22.518391,
-            accuracy: 15,
-            accuracyMeters: 15,
-            speed: 0,
-            timestamp: Math.floor(Date.now() / 1000),
-            age: 30,
-            bearing: 0,
-            adjustedBearing: 0,
-            bearingAccuracyDeg: 0,
-            speedAccuracyMps: 1.8
-          });
+          const driverConfig = await boltAPI.getLoggedInDriverConfiguration();
 
           if (driverConfig) {
             console.log(chalk.green('✅ Driver configuration retrieved!'));
@@ -619,19 +607,7 @@ async function showAuthSuccess(boltAPI: BoltDriverAPI) {
 
         // Try to get driver configuration
         try {
-          const driverConfig = await boltAPI.getLoggedInDriverConfiguration({
-            latitude: 51.233234,
-            longitude: 22.518391,
-            accuracy: 15,
-            accuracyMeters: 15,
-            speed: 0,
-            timestamp: Math.floor(Date.now() / 1000),
-            age: 30,
-            bearing: 0,
-            adjustedBearing: 0,
-            bearingAccuracyDeg: 0,
-            speedAccuracyMps: 1.8
-          });
+          const driverConfig = await boltAPI.getLoggedInDriverConfiguration();
 
           if (driverConfig) {
             console.log(chalk.green('✅ Driver configuration retrieved!'));
