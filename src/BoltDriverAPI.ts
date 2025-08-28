@@ -2420,6 +2420,94 @@ export class BoltDriverAPI {
         );
       }
 
+      // Try to get real driver configuration from API first
+      try {
+        this.logger.info("Attempting to call real API endpoint for driver configuration");
+        const gpsInfo = this.createDefaultGpsInfo();
+        const deviceId = this.sessionInfo?.sessionId?.split('d')[0] || 'unknown';
+        
+        const response = await this.client.get(
+          'https://driver.live.boltsvc.net/driver/getLoggedInDriverConfigurationV2',
+          {
+            params: {
+              app_platform_provider: 'apple',
+              brand: 'bolt',
+              deviceId: deviceId,
+              deviceType: 'iphone',
+              device_name: 'iPhone17,3',
+              device_os_version: 'iOS18.6',
+              gps_accuracy_meters: gpsInfo.accuracyMeters || 15,
+              gps_adjusted_bearing: gpsInfo.adjustedBearing || 0,
+              gps_age: gpsInfo.age || 30,
+              gps_lat: gpsInfo.latitude || 51.233234,
+              gps_lng: gpsInfo.longitude || 22.518391,
+              gps_speed: gpsInfo.speed || 0,
+              gps_speed_accuracy_mps: gpsInfo.speedAccuracyMps || 1.8,
+              gps_timestamp: Math.floor(Date.now() / 1000),
+              language: 'en-GB',
+              session_id: `${deviceId}d${Date.now()}.518508`,
+              theme: 'dark',
+              version: 'DI.116.0'
+            },
+            headers: {
+              'Authorization': `Bearer ${this.accessToken}`,
+              'Host': 'driver.live.boltsvc.net',
+              'Connection': 'keep-alive',
+              'Accept': '*/*',
+              'User-Agent': 'Bolt%20Driver/181158215 CFNetwork/3826.600.31 Darwin/24.6.0',
+              'Accept-Language': 'en-GB,en;q=0.9',
+              'Accept-Encoding': 'gzip, deflate, br'
+            }
+          }
+        );
+
+        if (response.data.code === 0 && response.data.data) {
+          const configData = response.data.data;
+          
+          // Extract the real driver information from the API response
+          const driverConfig = {
+            driver_info: {
+              driver_id: configData.user?.id || this.driverInfo.driverId,
+              partner_id: configData.user?.partner_id || this.driverInfo.partnerId,
+              company_id: configData.user?.company_id || this.driverInfo.companyId,
+              company_city_id: configData.user?.company_city_id || this.driverInfo.companyCityId,
+              first_name: configData.user?.name?.split(' ')[0] || `Driver ${configData.user?.id || this.driverInfo.driverId}`,
+              last_name: configData.user?.name?.split(' ').slice(1).join(' ') || '',
+              email: configData.user?.username || "Not available via API",
+              phone: configData.user?.phone || "Not available via API",
+            },
+            company_info: {
+              name: `Company ${configData.user?.company_id || this.driverInfo.companyId}`,
+              country: configData.user?.country || "Not available via API",
+              city: configData.user?.city_name || "Not available via API",
+            },
+            vehicle_info: {
+              selected_car_id: configData.car?.selected_car_id || 0,
+              selected_car_name: configData.car?.selected_car_name || "Not available via API",
+              make: configData.car?.selected_car_name?.split('•')[1]?.trim() || "Not available via API",
+              model: configData.car?.selected_car_name?.split('•')[1]?.trim() || "",
+              license_plate: configData.car?.selected_car_name?.split('•')[0]?.trim() || "Not available via API",
+            },
+            app_config: configData.app || {},
+            features: configData.features || {}
+          };
+
+          this.logger.info("Successfully retrieved driver configuration from API", {
+            driverId: driverConfig.driver_info.driver_id,
+            partnerId: driverConfig.driver_info.partner_id,
+            companyId: driverConfig.driver_info.company_id,
+            hasApiData: true,
+            dataSource: 'API endpoint'
+          });
+
+          return driverConfig;
+        }
+      } catch (apiError: unknown) {
+        this.logger.warn("Failed to get driver configuration from API, falling back to JWT data", {
+          error: apiError instanceof Error ? apiError.message : 'Unknown error'
+        });
+      }
+
       // Start with JWT-based information
       const driverConfig: any = {
         driver_info: {
