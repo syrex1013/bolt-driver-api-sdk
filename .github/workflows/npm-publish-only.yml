@@ -54,9 +54,11 @@ jobs:
           delete pkg.publishConfig;
           require('fs').writeFileSync('package-npm.json', JSON.stringify(pkg, null, 2));
         "
+        # Replace the original package.json with the NPM version
+        mv package-npm.json package.json
       
     - name: Publish to NPM
-      run: npm publish package-npm.json
+      run: npm publish
       env:
         NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         
