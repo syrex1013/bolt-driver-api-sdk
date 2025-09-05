@@ -62,6 +62,12 @@ npm install @syrex1013/bolt-driver-api
 echo "@syrex1013:registry=https://npm.pkg.github.com" >> ~/.npmrc
 ```
 
+**Or create a `.npmrc` file in your project:**
+
+```
+@syrex1013:registry=https://npm.pkg.github.com
+```
+
 ## 🎯 Quick Start
 
 ### Basic Usage
