@@ -1,6 +1,6 @@
 {
   "name": "bolt-driver-api",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Official Node.js SDK for Bolt Driver API - communicate with Bolt's driver platform like the mobile app",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
