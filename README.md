@@ -5,8 +5,8 @@
 ![Bolt Driver API](https://img.shields.io/badge/Bolt-Driver%20API-00D100?style=for-the-badge&logo=bolt&logoColor=white)
 ![npm version](https://img.shields.io/npm/v/bolt-driver-api?style=for-the-badge)
 ![License](https://img.shields.io/npm/l/bolt-driver-api?style=for-the-badge)
-![Build Status](https://img.shields.io/github/actions/workflow/status/bolt-driver-api/bolt-driver-api-sdk/test.yml?style=for-the-badge)
-![Coverage](https://img.shields.io/codecov/c/github/bolt-driver-api/bolt-driver-api-sdk?style=for-the-badge)
+![Build Status](https://img.shields.io/github/actions/workflow/status/syrex1013/bolt-driver-api-sdk/test.yml?style=for-the-badge)
+![Coverage](https://img.shields.io/codecov/c/github/syrex1013/bolt-driver-api-sdk?style=for-the-badge)
 ![TypeScript](https://img.shields.io/badge/TypeScript-Ready-blue?style=for-the-badge&logo=typescript)
 
 ## The official Node.js SDK for integrating with Bolt's driver platform API
@@ -510,7 +510,7 @@ We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) f
 
 ```bash
 # Clone the repository
-git clone https://github.com/bolt-driver-api/bolt-driver-api-sdk.git
+git clone https://github.com/syrex1013/bolt-driver-api-sdk.git
 cd bolt-driver-api-sdk
 
 # Install dependencies
@@ -529,14 +529,14 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🔗 Links
 
-- [GitHub Repository](https://github.com/bolt-driver-api/bolt-driver-api-sdk)
+- [GitHub Repository](https://github.com/syrex1013/bolt-driver-api-sdk)
 - [NPM Package](https://www.npmjs.com/package/bolt-driver-api)
-- [API Documentation](https://github.com/bolt-driver-api/bolt-driver-api-sdk/wiki)
-- [Issue Tracker](https://github.com/bolt-driver-api/bolt-driver-api-sdk/issues)
+- [API Documentation](https://github.com/syrex1013/bolt-driver-api-sdk/wiki)
+- [Issue Tracker](https://github.com/syrex1013/bolt-driver-api-sdk/issues)
 
 ## 💬 Support
 
-For support, please open an issue in the [GitHub repository](https://github.com/bolt-driver-api/bolt-driver-api-sdk/issues) or contact us at <team@boltdriverapi.com>.
+For support, please open an issue in the [GitHub repository](https://github.com/syrex1013/bolt-driver-api-sdk/issues) or contact us at <remix3030303@hotmail.com>.
 
 ---
 

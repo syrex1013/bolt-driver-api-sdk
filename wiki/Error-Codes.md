@@ -470,6 +470,6 @@ class RequestQueue {
 If you encounter errors not listed here:
 
 1. Check the [FAQ](FAQ.md)
-2. Search [GitHub Issues](https://github.com/bolt-driver-api/bolt-driver-api-sdk/issues)
+2. Search [GitHub Issues](https://github.com/syrex1013/bolt-driver-api-sdk/issues)
 3. Enable debug logging for more details
 4. Contact support with error details and logs

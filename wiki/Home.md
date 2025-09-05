@@ -49,14 +49,14 @@ Welcome to the official Bolt Driver API SDK documentation. This wiki provides co
 ## 🚀 Quick Links
 
 - **NPM Package**: [bolt-driver-api](https://www.npmjs.com/package/bolt-driver-api)
-- **GitHub Repository**: [bolt-driver-api-sdk](https://github.com/bolt-driver-api/bolt-driver-api-sdk)
-- **Issue Tracker**: [GitHub Issues](https://github.com/bolt-driver-api/bolt-driver-api-sdk/issues)
-- **Changelog**: [CHANGELOG.md](https://github.com/bolt-driver-api/bolt-driver-api-sdk/blob/main/CHANGELOG.md)
+- **GitHub Repository**: [bolt-driver-api-sdk](https://github.com/syrex1013/bolt-driver-api-sdk)
+- **Issue Tracker**: [GitHub Issues](https://github.com/syrex1013/bolt-driver-api-sdk/issues)
+- **Changelog**: [CHANGELOG.md](https://github.com/syrex1013/bolt-driver-api-sdk/blob/main/CHANGELOG.md)
 
 ## 🤝 Contributing
 
-We welcome contributions to both the SDK and this documentation. Please see our [Contributing Guide](https://github.com/bolt-driver-api/bolt-driver-api-sdk/blob/main/CONTRIBUTING.md) for details.
+We welcome contributions to both the SDK and this documentation. Please see our [Contributing Guide](https://github.com/syrex1013/bolt-driver-api-sdk/blob/main/CONTRIBUTING.md) for details.
 
 ## 📄 License
 
-This SDK is licensed under the MIT License. See [LICENSE](https://github.com/bolt-driver-api/bolt-driver-api-sdk/blob/main/LICENSE) for details.
+This SDK is licensed under the MIT License. See [LICENSE](https://github.com/syrex1013/bolt-driver-api-sdk/blob/main/LICENSE) for details.

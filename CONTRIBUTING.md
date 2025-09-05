@@ -16,14 +16,14 @@ First off, thank you for considering contributing to the Bolt Driver API SDK! It
 
 ## Code of Conduct
 
-This project and everyone participating in it is governed by our Code of Conduct. By participating, you are expected to uphold this code. Please report unacceptable behavior to <team@boltdriverapi.com>.
+This project and everyone participating in it is governed by our Code of Conduct. By participating, you are expected to uphold this code. Please report unacceptable behavior to <remix3030303@hotmail.com>.
 
 ## Getting Started
 
 Before you begin:
 
-- Have you read the [documentation](https://github.com/bolt-driver-api/bolt-driver-api-sdk/wiki)?
-- Check if your issue/idea has already been reported/discussed in [Issues](https://github.com/bolt-driver-api/bolt-driver-api-sdk/issues)
+- Have you read the [documentation](https://github.com/syrex1013/bolt-driver-api-sdk/wiki)?
+- Check if your issue/idea has already been reported/discussed in [Issues](https://github.com/syrex1013/bolt-driver-api-sdk/issues)
 - Check if your idea fits with the scope and aims of the project
 
 ## How Can I Contribute?
@@ -356,7 +356,7 @@ When adding new features:
 
 ## Questions?
 
-Feel free to open an issue with the `question` label or contact us at <team@boltdriverapi.com>.
+Feel free to open an issue with the `question` label or contact us at <remix3030303@hotmail.com>.
 
 ## Recognition
 

@@ -389,4 +389,4 @@ api.updateLoggingConfig({
 });
 ```
 
-For more help, see the [FAQ](FAQ.md) or open an issue on [GitHub](https://github.com/bolt-driver-api/bolt-driver-api-sdk/issues).
+For more help, see the [FAQ](FAQ.md) or open an issue on [GitHub](https://github.com/syrex1013/bolt-driver-api-sdk/issues).

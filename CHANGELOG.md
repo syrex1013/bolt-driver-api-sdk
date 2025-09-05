@@ -101,4 +101,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-For more information on upgrading between versions, see the [Migration Guide](https://github.com/bolt-driver-api/bolt-driver-api-sdk/wiki/Migration-Guide).
+For more information on upgrading between versions, see the [Migration Guide](https://github.com/syrex1013/bolt-driver-api-sdk/wiki/Migration-Guide).
