@@ -155,9 +155,9 @@ export interface SessionInfo {
   /** Partner company identifier */
   partnerId: number;
   /** Company identifier */
-  companyId: number;
+  companyId?: number;
   /** Company city identifier */
-  companyCityId: number;
+  companyCityId?: number;
   /** JWT access token for API authentication */
   accessToken?: string;
   /** Refresh token for obtaining new access tokens */
@@ -166,6 +166,18 @@ export interface SessionInfo {
   tokenType?: string;
   /** Token expiration timestamp in milliseconds */
   expiresAt: number;
+  /** Data property for token access (alternative structure) */
+  data?: {
+    token?: {
+      access_token?: string;
+      refresh_token?: string;
+    };
+  };
+  /** Token property (alternative structure) */
+  token?: {
+    access_token?: string;
+    refresh_token?: string;
+  };
 }
 
 // API Response Types
@@ -466,6 +478,9 @@ export interface Credentials {
   session_id: string;
   phone: string;
   verification_token?: string;
+  verification_code?: string;
+  refresh_token?: string;
+  access_token?: string;
 }
 
 // API Configuration
@@ -487,17 +502,18 @@ export interface RequestParams {
   device_name: string;
   device_os_version: string;
   driver_id: number;
-  gps_accuracy_meters: number;
-  gps_adjusted_bearing: number;
-  gps_age: number;
-  gps_lat: number;
-  gps_lng: number;
-  gps_speed: number;
-  gps_timestamp: number;
   language: string;
   session_id: string;
   theme: string;
   version: string;
+  // GPS parameters (optional for non-location requests)
+  gps_accuracy_meters?: number;
+  gps_adjusted_bearing?: number;
+  gps_age?: number;
+  gps_lat?: number;
+  gps_lng?: number;
+  gps_speed?: number;
+  gps_timestamp?: number;
   // Additional properties for specific endpoints
   lat?: number;
   lng?: number;
@@ -521,6 +537,16 @@ export class BoltApiError extends Error {
   ) {
     super(message);
     this.name = "BoltApiError";
+  }
+}
+
+/**
+ * Represents a "NOT_AUTHORIZED" error from the Bolt Driver API.
+ */
+export class NotAuthorizedError extends BoltApiError {
+  constructor(message: string, response?: any) {
+    super(message, 503, response);
+    this.name = "NotAuthorizedError";
   }
 }
 

@@ -5,48 +5,121 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.2+-blue.svg)](https://www.typescriptlang.org/)
 [![Node.js](https://img.shields.io/badge/Node.js-16+-green.svg)](https://nodejs.org/)
 
-Official Node.js SDK for Bolt Driver API - communicate with Bolt's driver platform like the mobile app. This SDK provides comprehensive access to Bolt's driver ecosystem, enabling developers to build powerful applications that integrate seamlessly with Bolt's ride-hailing platform.
+> **Official Node.js SDK for Bolt Driver API** - Communicate with Bolt's driver platform programmatically, just like the mobile app.
 
-## Features
+This SDK provides comprehensive access to Bolt's driver ecosystem, enabling developers to build powerful applications that integrate seamlessly with Bolt's ride-hailing platform.
+
+## ✨ Features
 
 - 🔐 **Complete Authentication Flow** - SMS-based authentication with phone number verification
-- 🎯 **Real API Integration** - Direct integration with Bolt's driver platform APIs
+- 🎯 **Real API Integration** - Direct integration with Bolt's production driver platform APIs
 - 📱 **Device Simulation** - Mimics real mobile app behavior and device information
 - 🗺️ **GPS Integration** - Location-based API calls with real-time coordinates
-- 🚗 **Driver Operations** - Get driver state, home screen, working time, and more
+- 🚗 **Driver Operations** - Get driver state, home screen, working time, earnings, and more
 - 💾 **Token Persistence** - Automatically save and restore authentication tokens
 - 📝 **Comprehensive Logging** - Configurable logging for requests, responses, and errors
 - 🧪 **Full Test Coverage** - Comprehensive test suite with real API testing
-- 📚 **Multiple Examples** - Interactive examples demonstrating all features
+- 📚 **Interactive Examples** - Multiple working examples demonstrating all features
 
-## New in v1.1.0
+## 🚀 Quick Start
 
-- **Token Persistence**: No more re-authentication! Tokens are automatically saved and restored
-- **Enhanced Logging**: Configurable logging system with file and console output
-- **New API Methods**: All methods from the latest Bolt API specifications
-- **Better Error Handling**: Improved error messages and debugging information
-- **JSDoc Documentation**: Complete documentation for all methods and types
+### Installation
 
-## Installation
-
-### npm
 ```bash
 npm install bolt-driver-api
 ```
 
-### yarn
-```bash
-yarn add bolt-driver-api
+### Basic Usage
+
+```typescript
+import { BoltDriverAPI, DeviceInfo, AuthConfig } from 'bolt-driver-api';
+
+// Configure device and authentication
+const deviceInfo: DeviceInfo = {
+  deviceId: 'your-device-id',
+  deviceType: 'iphone',
+  deviceName: 'iPhone17,3',
+  deviceOsVersion: 'iOS18.6',
+  appVersion: 'DI.116.0'
+};
+
+const authConfig: AuthConfig = {
+  authMethod: 'phone',
+  brand: 'bolt',
+  country: 'pl',
+  language: 'en-GB',
+  theme: 'dark'
+};
+
+// Initialize API
+const api = new BoltDriverAPI(deviceInfo, authConfig);
+
+// Start authentication
+const authResponse = await api.startAuthentication(
+  authConfig,
+  deviceInfo,
+  { phone: '+48500123456' }
+);
+
+// Confirm with SMS code
+const confirmResponse = await api.confirmAuthentication(
+  authConfig,
+  deviceInfo,
+  { verification_token: authResponse.data.verification_token },
+  '123456' // SMS code
+);
+
+// API is now authenticated and ready to use!
+const driverState = await api.getDriverState({
+  latitude: 52.237049,
+  longitude: 21.017532,
+  accuracy: 5.0,
+  bearing: 90.5,
+  speed: 25.3,
+  timestamp: Math.floor(Date.now() / 1000),
+  age: 2.5,
+  accuracyMeters: 5.0,
+  adjustedBearing: 90.5,
+  bearingAccuracyDeg: 2.0,
+  speedAccuracyMps: 1.5
+});
 ```
 
-### pnpm
-```bash
-pnpm add bolt-driver-api
-```
-
-## Documentation
+## 📖 Documentation
 
 📚 **[Complete API Documentation](https://bolt-driver-api.github.io/bolt-driver-api-sdk/)** - Comprehensive guides, examples, and API reference
+
+### Available Methods
+
+#### Authentication
+- `startAuthentication()` - Initiate SMS authentication
+- `confirmAuthentication()` - Complete SMS verification
+- `authenticateWithMagicLink()` - Magic link authentication
+- `isAuthenticated()` - Check authentication status
+- `validateToken()` - Validate existing token
+
+#### Driver Operations
+- `getDriverState()` - Get current driver status and polling info
+- `getDriverHomeScreen()` - Get driver's home screen data
+- `getWorkingTimeInfo()` - Get working time information
+- `getDriverNavBarBadges()` - Get navigation bar notifications
+- `getLoggedInDriverConfiguration()` - Get driver profile and settings
+
+#### Business Operations
+- `getScheduledRideRequests()` - Get scheduled rides
+- `getEarningLandingScreen()` - Get earnings overview
+- `getActivityRides()` - Get ride activity history
+- `getOrderHistoryPaginated()` - Get paginated order history
+
+#### Location & Maps
+- `getMapsConfigs()` - Get map configuration
+- `getMapTile()` - Get map tiles for heatmaps
+- `getOtherActiveDrivers()` - Get nearby active drivers
+
+#### Utilities
+- `setRequestLogging()` - Control request/response logging
+- `getLoggingConfig()` - Get current logging configuration
+- `clearAuthentication()` - Clear stored tokens
 
 🔗 **[Quick Start Guide](https://bolt-driver-api.github.io/bolt-driver-api-sdk/quick-start.html)** - Get up and running in minutes
 
@@ -137,7 +210,48 @@ const boltAPI = new BoltDriverAPI(deviceInfo, authConfig, undefined, undefined, 
 
 // Update logging configuration at runtime
 boltAPI.updateLoggingConfig({ logResponses: true });
+
+// Control request/response logging dynamically
+boltAPI.setRequestLogging(false); // Disable all request/response logging
+boltAPI.setRequestLogging(true, { logRequests: true, logResponses: false }); // Custom control
+
+// Get current logging configuration
+const currentConfig = boltAPI.getLoggingConfig();
+console.log('Current logging:', currentConfig);
 ```
+
+### Logging Control
+
+The SDK provides fine-grained control over request/response logging to help you manage console output:
+
+```typescript
+// Disable all request/response logging (keep errors)
+boltAPI.setRequestLogging(false);
+
+// Enable only request logging
+boltAPI.setRequestLogging(true, { logRequests: true, logResponses: false });
+
+// Enable only response logging  
+boltAPI.setRequestLogging(true, { logRequests: false, logResponses: true });
+
+// Enable both request and response logging
+boltAPI.setRequestLogging(true, { logRequests: true, logResponses: true });
+
+// Disable all logging except errors
+boltAPI.setRequestLogging(false, { logErrors: true });
+
+// Get current logging configuration
+const config = boltAPI.getLoggingConfig();
+console.log('Requests:', config.logRequests);
+console.log('Responses:', config.logResponses);
+console.log('Errors:', config.logErrors);
+```
+
+**Use Cases:**
+- **Development**: Enable full logging for debugging
+- **Production**: Disable request/response logging, keep errors
+- **Debugging**: Focus on specific log types
+- **Performance**: Reduce console noise in high-traffic scenarios
 
 ## API Methods
 

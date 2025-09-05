@@ -163,7 +163,8 @@ async function performAuthentication(boltAPI: BoltDriverAPI, userInput: UserInpu
     // Create credentials object
     const credentials: Credentials = {
       driver_id: 'test_driver_id',
-      session_id: 'test_session_id'
+      session_id: 'test_session_id',
+      phone: userInput.phoneNumber
     };
 
     // Create device info and auth config for this request
@@ -188,11 +189,11 @@ async function performAuthentication(boltAPI: BoltDriverAPI, userInput: UserInpu
     
     console.log(boxen(
       `${chalk.yellow('📨 SMS Sent!')}\n\n` +
-      `${chalk.gray('Verification Token:')} ${authResponse.verification_token.substring(0, 30)}...\n` +
-      `${chalk.gray('Code Channel:')} ${authResponse.verification_code_channel}\n` +
-      `${chalk.gray('Target:')} ${authResponse.verification_code_target}\n` +
-      `${chalk.gray('Code Length:')} ${authResponse.verification_code_length} digits\n` +
-      `${chalk.gray('Resend Wait:')} ${authResponse.resend_wait_time_seconds} seconds`,
+      `${chalk.gray('Verification Token:')} ${authResponse.data?.verification_token?.substring(0, 30) || 'N/A'}...\n` +
+      `${chalk.gray('Code Channel:')} ${authResponse.data?.verification_code_channel || 'N/A'}\n` +
+      `${chalk.gray('Target:')} ${authResponse.data?.verification_code_target || 'N/A'}\n` +
+      `${chalk.gray('Code Length:')} ${authResponse.data?.verification_code_length || 'N/A'} digits\n` +
+      `${chalk.gray('Resend Wait:')} ${authResponse.data?.resend_wait_time_seconds || 'N/A'} seconds`,
       { padding: 1, borderColor: 'yellow', borderStyle: 'round' }
     ));
 
@@ -219,14 +220,17 @@ async function performAuthentication(boltAPI: BoltDriverAPI, userInput: UserInpu
 
     // Step 3: Confirm authentication
     spinner.start('Verifying SMS code...');
-    const confirmResponse = await boltAPI.confirmAuthentication(authConfig, deviceInfo, credentials, smsCode);
+
+    // Add SMS code to credentials before confirmation
+    credentials.verification_code = smsCode;
+
+    const confirmResponse = await boltAPI.confirmAuthentication(authConfig, deviceInfo, credentials);
     spinner.succeed(chalk.green('SMS code verified successfully'));
     
     console.log(boxen(
       `${chalk.green('✅ Authentication Successful!')}\n\n` +
-      `${chalk.gray('Token Type:')} ${confirmResponse.type}\n` +
-      `${chalk.gray('Access Token:')} ${confirmResponse.token.refresh_token.substring(0, 30)}...\n` +
-      `${chalk.gray('Token Type:')} ${confirmResponse.token.token_type}\n` +
+      `${chalk.gray('Token Type:')} ${confirmResponse.data?.token?.token_type || 'bearer'}\n` +
+      `${chalk.gray('Access Token:')} ${confirmResponse.data?.token?.refresh_token?.substring(0, 30) || 'N/A'}...\n` +
       `${chalk.gray('Token Saved:')} ${chalk.green('✅ Yes (will be reused next time)')}`,
       { padding: 1, borderColor: 'green', borderStyle: 'double' }
     ));

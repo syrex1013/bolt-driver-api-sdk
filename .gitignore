@@ -102,3 +102,4 @@ playwright/.cache/
 .example_requests
 .magic-link-token.json
 .bolt-token.json
+.kiro

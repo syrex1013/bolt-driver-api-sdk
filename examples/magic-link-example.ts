@@ -235,7 +235,8 @@ async function performPhoneAuthentication(boltAPI: BoltDriverAPI, deviceInfo: De
       deviceInfo,
       {
         driver_id: 'test_driver_id',
-        session_id: 'test_session_id'
+        session_id: 'test_session_id',
+        phone: phoneNumber
       }
     );
     
@@ -273,16 +274,17 @@ async function performPhoneAuthentication(boltAPI: BoltDriverAPI, deviceInfo: De
       deviceInfo,
       {
         driver_id: 'test_driver_id',
-        session_id: 'test_session_id'
-      },
-      smsCode
+        session_id: 'test_session_id',
+        phone: phoneNumber,
+        verification_code: smsCode
+      }
     );
-    
+
     spinner.succeed('SMS code verified successfully!');
-    
-    if (confirmAuthResponse.token && confirmAuthResponse.token.refresh_token) {
+
+    if (confirmAuthResponse.data?.token && confirmAuthResponse.data.token.refresh_token) {
       console.log(chalk.green('✓ Phone authentication successful!'));
-      console.log(chalk.gray(`Refresh token: ${confirmAuthResponse.token.refresh_token.substring(0, 20)}...`));
+      console.log(chalk.gray(`Refresh token: ${confirmAuthResponse.data.token.refresh_token.substring(0, 20)}...`));
       
       // Debug: Check authentication state
       console.log(chalk.blue('🔍 Checking authentication state...'));

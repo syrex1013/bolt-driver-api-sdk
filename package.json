@@ -13,15 +13,18 @@
     "lint": "eslint src/**/*.ts",
     "lint:fix": "eslint src/**/*.ts --fix",
     "clean": "rm -rf dist",
-    "prepublishOnly": "npm run clean && npm run build",
+    "prepublishOnly": "npm run clean && npm run build && npm run test",
     "examples": "ts-node examples/index.ts",
     "examples:auth": "ts-node examples/auth.ts",
     "examples:cli": "ts-node examples/cli.ts",
     "examples:enhanced": "ts-node examples/enhanced.ts",
     "examples:magic-link": "ts-node examples/magic-link-example.ts",
+    "examples:logging": "ts-node examples/logging-control-example.ts",
     "test:magic-link": "ts-node examples/test-magic-link.ts",
-    "test:magic-link-simple": "ts-node examples/test-magic-link-simple.ts",
-    "examples:bolt-driver": "ts-node examples/bolt-driver-endpoints.ts"
+    "examples:bolt-driver": "ts-node examples/bolt-driver-endpoints.ts",
+    "examples:inspect": "ts-node examples/inspect-responses.ts",
+    "prepare": "npm run build",
+    "release": "npm version patch && npm publish"
   },
   "keywords": [
     "bolt",

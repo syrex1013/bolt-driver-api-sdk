@@ -115,7 +115,11 @@ async function initializeAPI(): Promise<CLIState | null> {
       bearing: 0,
       speed: -1.000007,
       timestamp: Math.floor(Date.now() / 1000),
-      age: 0.01
+      age: 0.01,
+      accuracyMeters: 19.791364,
+      adjustedBearing: 0,
+      bearingAccuracyDeg: 180,
+      speedAccuracyMps: 1.8
     };
 
     const spinner = ora('Initializing Bolt Driver API...').start();
@@ -154,13 +158,37 @@ async function performAuthentication(api: BoltDriverAPI, phoneNumber: string, us
     console.log(chalk.cyan('\n🔐 Authentication Process\n'));
 
     const spinner = ora('Starting authentication...').start();
-    const authResponse = await api.startAuthentication(phoneNumber);
+
+    // Get device info from the API instance
+    const deviceInfo = {
+      deviceId: 'cli-device-' + Date.now(),
+      deviceType: 'iphone' as const,
+      deviceName: 'iPhone CLI',
+      deviceOsVersion: 'iOS18.6',
+      appVersion: 'DI.116.0'
+    };
+
+    const authConfig: AuthConfig = {
+      authMethod: 'phone',
+      brand: 'bolt',
+      country: 'pl',
+      language: 'en-GB',
+      theme: 'dark'
+    };
+
+    const credentials: any = {
+      driver_id: 'cli_driver',
+      session_id: 'cli_session_' + Date.now(),
+      phone: phoneNumber
+    };
+
+    const authResponse = await api.startAuthentication(authConfig, deviceInfo, credentials);
     spinner.succeed('SMS sent successfully');
 
     console.log(boxen(
       `${chalk.yellow('📨 SMS Sent')}\n\n` +
-      `Request ID: ${authResponse.requestId}\n` +
-      `Expires: ${new Date(authResponse.expiresAt * 1000).toLocaleString()}`,
+      `Verification Token: ${authResponse.data?.verification_token?.substring(0, 20) || 'N/A'}...\n` +
+      `Code Channel: ${authResponse.data?.verification_code_channel || 'N/A'}`,
       { padding: 1, borderColor: 'yellow' }
     ));
 
@@ -178,13 +206,20 @@ async function performAuthentication(api: BoltDriverAPI, phoneNumber: string, us
     }
 
     spinner.start('Verifying SMS code...');
-    const confirmResponse = await api.confirmAuthentication(authResponse.requestId, smsCode);
+
+    // Add verification token to credentials for confirmation
+    credentials.verification_token = authResponse.data?.verification_token;
+
+    // Add SMS code to credentials before confirmation
+    credentials.verification_code = smsCode;
+
+    const confirmResponse = await api.confirmAuthentication(authConfig, deviceInfo, credentials);
     spinner.succeed(chalk.green('Authentication successful'));
 
     console.log(boxen(
       `${chalk.green('✅ Authenticated!')}\n\n` +
-      `Driver ID: ${confirmResponse.driverInfo.driverId}\n` +
-      `Session ID: ${confirmResponse.driverInfo.sessionId}`,
+      `Token Type: ${confirmResponse.data?.token?.token_type || 'bearer'}\n` +
+      `Refresh Token: ${confirmResponse.data?.token?.refresh_token?.substring(0, 20) || 'N/A'}...`,
       { padding: 1, borderColor: 'green' }
     ));
 
@@ -492,7 +527,11 @@ async function handleGPSUpdate(state: CLIState) {
     ...gpsInput,
     bearing: 0,
     timestamp: Math.floor(Date.now() / 1000),
-    age: 0.01
+    age: 0.01,
+    accuracyMeters: gpsInput.accuracy || 15,
+    adjustedBearing: 0,
+    bearingAccuracyDeg: 180,
+    speedAccuracyMps: 1.8
   };
 
   console.log(chalk.green('\n🌍 GPS information updated successfully'));

@@ -260,7 +260,7 @@ describe('Authentication Integration and Token Persistence', () => {
         
         expect(result).toEqual({ code: 0, message: 'OK', data: { list: [] } });
         expect(mockAxiosInstance.get).toHaveBeenCalledWith(
-          'https://node.bolt.eu/search/driver/getOtherActiveDrivers',
+          'https://europe-company.taxify.eu/search/driver/getOtherActiveDrivers',
           expect.objectContaining({
             params: expect.objectContaining({
               brand: 'bolt',
@@ -299,7 +299,7 @@ describe('Authentication Integration and Token Persistence', () => {
     });
 
     describe('updatePushProfile', () => {
-      it('should update push profile', async () => {
+      it('should update push profile by calling setDeviceToken', async () => {
         const mockResponse = {
           data: {
             code: 0,
@@ -307,20 +307,18 @@ describe('Authentication Integration and Token Persistence', () => {
           }
         };
 
-        mockAxiosInstance.put.mockResolvedValueOnce(mockResponse);
+        mockAxiosInstance.post.mockResolvedValueOnce(mockResponse);
 
-        await boltAPI.updatePushProfile('user123', 'instance456', 'device-token-789');
-        
-        expect(mockAxiosInstance.put).toHaveBeenCalledWith(
-          'https://ocra-bolt.api.sinch.com/ocra/v1/users/user123/instances/instance456/pushProfile',
+        await boltAPI.updatePushProfile('device-token-789');
+
+        expect(mockAxiosInstance.post).toHaveBeenCalledWith(
+          `${boltAPI['config'].driverBaseUrl}/partnerDriver/setDeviceToken`,
+          { device_token: 'device-token-789' },
           expect.objectContaining({
-            apn: [{
-              bundleId: 'ee.taxify.driver',
-              deviceToken: 'device-token-789',
-              environment: 'production',
-              tokenType: 'voip'
-            }],
-            maxPayloadSize: 4096
+            params: expect.objectContaining({
+              brand: 'bolt',
+              deviceId: mockDeviceInfo.deviceId
+            })
           })
         );
       });

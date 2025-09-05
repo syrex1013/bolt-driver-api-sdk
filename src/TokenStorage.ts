@@ -83,15 +83,47 @@ export class FileTokenStorage implements TokenStorage {
       const fileContent = await fs.readFile(this.filePath, 'utf8');
       const tokenData = JSON.parse(fileContent);
 
-      // Check if token is expired
-      if (tokenData.expiresAt && Date.now() > tokenData.expiresAt) {
+      // Check if token is expired (support both expiresAt and expires_at)
+      const expiresAt = tokenData.expiresAt || tokenData.expires_at || tokenData.sessionInfo?.expiresAt;
+      if (expiresAt && Date.now() > expiresAt) {
         await this.clearToken();
         return null;
       }
 
+      // Support multiple legacy token file shapes. Prefer explicit token/sessionInfo fields,
+      // but fall back to known alternative keys (refresh_token, access_token, driver_id, etc.).
+      const token = tokenData.token || tokenData.refresh_token || tokenData.access_token || null;
+      let sessionInfo = tokenData.sessionInfo || null;
+
+      if (!sessionInfo && tokenData) {
+        // Attempt to construct a minimal SessionInfo from legacy fields if present
+        const driverId = Number(tokenData.driver_id || tokenData.driverId || 0) || 0;
+        const partnerId = Number(tokenData.partner_id || tokenData.partnerId || 0) || 0;
+        const companyId = Number(tokenData.company_id || tokenData.companyId || 0) || 0;
+        const companyCityId = Number(tokenData.company_city_id || tokenData.companyCityId || 0) || 0;
+
+        if (token || driverId) {
+          sessionInfo = {
+            sessionId: tokenData.session_id || tokenData.sessionId || "",
+            driverId: driverId,
+            partnerId: partnerId,
+            companyId: companyId,
+            companyCityId: companyCityId,
+            accessToken: token || undefined,
+            refreshToken: tokenData.refresh_token || undefined,
+            tokenType: tokenData.token_type || undefined,
+            expiresAt: expiresAt || Date.now() + 3600000,
+          } as SessionInfo;
+        }
+      }
+
+      if (!token && !sessionInfo) {
+        return null;
+      }
+
       return {
-        token: tokenData.token,
-        sessionInfo: tokenData.sessionInfo
+        token: token || (sessionInfo?.accessToken ?? ''),
+        sessionInfo: sessionInfo as SessionInfo,
       };
     } catch (error) {
       // File doesn't exist or is invalid
