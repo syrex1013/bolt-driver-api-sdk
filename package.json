@@ -55,7 +55,8 @@
     "url": "https://github.com/sponsors/syrex1013"
   },
   "engines": {
-    "node": ">=16.0.0"
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
   },
   "dependencies": {
     "@types/dotenv": "^6.1.1",

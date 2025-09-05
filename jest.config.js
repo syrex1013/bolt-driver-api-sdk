@@ -17,5 +17,14 @@ module.exports = {
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'lcov', 'html'],
   setupFilesAfterEnv: ['<rootDir>/tests/setup.ts'],
-  testTimeout: 30000
+  testTimeout: 30000,
+  // CI-specific configuration
+  maxWorkers: process.env.CI ? 2 : '50%',
+  forceExit: true,
+  detectOpenHandles: true,
+  // Reduce memory usage in CI
+  ...(process.env.CI && {
+    maxWorkers: 1,
+    workerIdleMemoryLimit: '512MB'
+  })
 };
