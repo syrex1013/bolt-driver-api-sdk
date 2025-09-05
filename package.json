@@ -44,15 +44,15 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/bolt-driver-api/bolt-driver-api-sdk.git"
+    "url": "https://github.com/syrex1013/bolt-driver-api-sdk.git"
   },
   "bugs": {
-    "url": "https://github.com/bolt-driver-api/bolt-driver-api-sdk/issues"
+    "url": "https://github.com/syrex1013/bolt-driver-api-sdk/issues"
   },
-  "homepage": "https://github.com/bolt-driver-api/bolt-driver-api-sdk#readme",
+  "homepage": "https://github.com/syrex1013/bolt-driver-api-sdk#readme",
   "funding": {
     "type": "github",
-    "url": "https://github.com/sponsors/bolt-driver-api"
+    "url": "https://github.com/sponsors/syrex1013"
   },
   "engines": {
     "node": ">=16.0.0"
