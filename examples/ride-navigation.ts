@@ -420,7 +420,7 @@ class RideNavigationExample {
     this.displayHeader();
 
     // Check authentication
-    if (!this.api.isAuthenticated()) {
+    if (!(await this.api.validateExistingToken())) {
       console.log(chalk.red("\n❌ Not authenticated. Please run the authentication example first."));
       return;
     }

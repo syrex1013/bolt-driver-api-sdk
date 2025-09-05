@@ -604,6 +604,23 @@ export interface FileTokenStorage extends TokenStorage {
   filePath: string;
 }
 
+// Enums for API parameters
+export enum ScheduledRideRequestGroupBy {
+  Upcoming = "upcoming",
+  Accepted = "accepted"
+}
+
+export enum ActivityRidesGroupBy {
+  All = "all",
+  Hourly = "hourly"
+}
+
+export enum EarningsChartType {
+  Daily = "daily",
+  Weekly = "weekly",
+  Monthly = "monthly"
+}
+
 // Logging Configuration
 export interface LoggingConfig {
   enabled: boolean;

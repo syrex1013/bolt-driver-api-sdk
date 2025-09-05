@@ -32,7 +32,7 @@ import { TokenStorage, SessionInfo } from './types';
  * @author Bolt Driver API Team
  */
 export class FileTokenStorage implements TokenStorage {
-  public filePath: string;
+  public filePath = join(process.cwd(), '.bolt-token.json');
 
   /**
    * Creates a new FileTokenStorage instance.
@@ -83,35 +83,40 @@ export class FileTokenStorage implements TokenStorage {
       const fileContent = await fs.readFile(this.filePath, 'utf8');
       const tokenData = JSON.parse(fileContent);
 
-      // Check if token is expired (support both expiresAt and expires_at)
-      const expiresAt = tokenData.expiresAt || tokenData.expires_at || tokenData.sessionInfo?.expiresAt;
+      let expiresAt = tokenData.expiresAt || tokenData.expires_at || tokenData.sessionInfo?.expiresAt;
+
+      // If expiresAt is a small number (likely seconds), convert to milliseconds
+      if (expiresAt && expiresAt < 99999999999) { // Arbitrary large number to distinguish seconds from milliseconds
+        expiresAt *= 1000;
+      }
+
       if (expiresAt && Date.now() > expiresAt) {
-        await this.clearToken();
+        // Don't delete the file, just return null to indicate expired token
         return null;
       }
 
       // Support multiple legacy token file shapes. Prefer explicit token/sessionInfo fields,
       // but fall back to known alternative keys (refresh_token, access_token, driver_id, etc.).
-      const token = tokenData.token || tokenData.refresh_token || tokenData.access_token || null;
+      const token = tokenData.token || tokenData.sessionInfo?.accessToken || tokenData.access_token || null;
       let sessionInfo = tokenData.sessionInfo || null;
 
       if (!sessionInfo && tokenData) {
         // Attempt to construct a minimal SessionInfo from legacy fields if present
-        const driverId = Number(tokenData.driver_id || tokenData.driverId || 0) || 0;
-        const partnerId = Number(tokenData.partner_id || tokenData.partnerId || 0) || 0;
-        const companyId = Number(tokenData.company_id || tokenData.companyId || 0) || 0;
-        const companyCityId = Number(tokenData.company_city_id || tokenData.companyCityId || 0) || 0;
+        const driverId = Number(tokenData.driver_id || tokenData.driverId || tokenData.sessionInfo?.driverId || 0) || 0;
+        const partnerId = Number(tokenData.partner_id || tokenData.partnerId || tokenData.sessionInfo?.partnerId || 0) || 0;
+        const companyId = Number(tokenData.company_id || tokenData.companyId || tokenData.sessionInfo?.companyId || 0) || 0;
+        const companyCityId = Number(tokenData.company_city_id || tokenData.companyCityId || tokenData.sessionInfo?.companyCityId || 0) || 0;
 
         if (token || driverId) {
           sessionInfo = {
-            sessionId: tokenData.session_id || tokenData.sessionId || "",
+            sessionId: tokenData.session_id || tokenData.sessionId || tokenData.sessionInfo?.sessionId || "",
             driverId: driverId,
             partnerId: partnerId,
             companyId: companyId,
             companyCityId: companyCityId,
             accessToken: token || undefined,
-            refreshToken: tokenData.refresh_token || undefined,
-            tokenType: tokenData.token_type || undefined,
+            refreshToken: tokenData.refresh_token || tokenData.sessionInfo?.refreshToken || undefined,
+            tokenType: tokenData.token_type || tokenData.sessionInfo?.tokenType || undefined,
             expiresAt: expiresAt || Date.now() + 3600000,
           } as SessionInfo;
         }

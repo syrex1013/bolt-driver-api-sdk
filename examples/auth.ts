@@ -8,6 +8,7 @@ import * as fs from "fs";
 import * as path from "path";
 import {
   BoltDriverAPI,
+  FileTokenStorage,
   DeviceInfo,
   AuthConfig,
   SmsLimitError,
@@ -49,7 +50,7 @@ function printHeader() {
 export async function authExample() {
   printHeader();
 
-  const tokenPath = path.join(__dirname, "..", ".magic-link-token.json");
+  const tokenPath = path.join(__dirname, "..", ".bolt-token.json");
   let userInput = await getUserInput(tokenPath);
 
   // Device information
@@ -83,9 +84,10 @@ export async function authExample() {
   console.log(`   ${chalk.gray("OS Version:")} ${deviceInfo.deviceOsVersion}`);
 
   try {
-    // Initialize API
+    // Initialize API with token storage
     const spinner = ora("Initializing Bolt Driver API...").start();
-    const boltAPI = new BoltDriverAPI(deviceInfo, authConfig);
+    const tokenStorage = new FileTokenStorage(".bolt-token.json");
+    const boltAPI = new BoltDriverAPI(deviceInfo, authConfig, {}, tokenStorage);
     boltAPI.updateLoggingConfig({
       logRequests: false,
       logResponses: false,

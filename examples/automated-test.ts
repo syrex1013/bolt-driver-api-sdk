@@ -21,8 +21,7 @@ import {
   Credentials, 
   GpsInfo,
   ScheduledRideRequestGroupBy,
-  ActivityRidesGroupBy,
-  EarningsChartType
+  ActivityRidesGroupBy
 } from "../src/types";
 import chalk from "chalk";
 import { v4 as uuidv4 } from "uuid";
@@ -47,7 +46,7 @@ interface TestResult {
 class TestConfig {
   // Device configuration
   static readonly DEVICE_INFO: DeviceInfo = {
-    deviceId: process.env.TEST_DEVICE_ID || uuidv4(),
+    deviceId: process.env['TEST_DEVICE_ID'] || uuidv4(),
     deviceType: "iphone" as const,
     deviceName: "iPhone17,3",
     deviceOsVersion: "iOS18.6",
@@ -56,14 +55,16 @@ class TestConfig {
 
   // Authentication configuration
   static readonly AUTH_CONFIG: AuthConfig = {
-    country: process.env.TEST_COUNTRY || "pl",
-    language: process.env.TEST_LANGUAGE || "en-GB",
-    brand: "bolt"
+    country: process.env['TEST_COUNTRY'] || "pl",
+    language: process.env['TEST_LANGUAGE'] || "en-GB",
+    brand: "bolt",
+    authMethod: "phone" as const,
+    theme: "light" as const
   };
 
   // Test credentials
   static readonly CREDENTIALS: Credentials = {
-    phone: process.env.TEST_PHONE || "+48500499993",
+    phone: process.env['TEST_PHONE'] || "+48500499993",
     driver_id: "test_driver_" + Date.now(),
     session_id: "test_session_" + Date.now()
   };
@@ -73,17 +74,19 @@ class TestConfig {
     latitude: 52.237049,
     longitude: 21.017532,
     accuracy: 10,
+    bearing: 0,
     speed: 0,
-    heading: 0,
-    gps_speed_accuracy: 1,
-    gps_bearing_accuracy: 1,
-    altitude: 100,
-    timestamp: Date.now()
+    timestamp: Math.floor(Date.now() / 1000),
+    age: 0,
+    accuracyMeters: 10,
+    adjustedBearing: 0,
+    bearingAccuracyDeg: 1,
+    speedAccuracyMps: 1
   };
 
   // Magic link for testing
-  static readonly TEST_MAGIC_LINK = process.env.TEST_MAGIC_LINK || "";
-  static readonly TEST_EMAIL = process.env.TEST_EMAIL || "test@example.com";
+  static readonly TEST_MAGIC_LINK = process.env['TEST_MAGIC_LINK'] || "";
+  static readonly TEST_EMAIL = process.env['TEST_EMAIL'] || "test@example.com";
 }
 
 /**
@@ -97,8 +100,7 @@ class AutomatedTestRunner {
   constructor() {
     this.api = new BoltDriverAPI(
       TestConfig.DEVICE_INFO,
-      TestConfig.AUTH_CONFIG,
-      { level: "error" } // Quiet logging for tests
+      TestConfig.AUTH_CONFIG
     );
   }
 
@@ -131,7 +133,7 @@ class AutomatedTestRunner {
     console.log(chalk.cyan("\n🔐 Testing Authentication Flow..."));
 
     // Check if we have a stored token
-    const isAuthenticated = this.api.isAuthenticated();
+    const isAuthenticated = await this.api.validateExistingToken();
     if (isAuthenticated) {
       console.log(chalk.green("✓ Using existing authentication"));
       return;
@@ -140,7 +142,11 @@ class AutomatedTestRunner {
     // If we have a magic link, use it
     if (TestConfig.TEST_MAGIC_LINK) {
       console.log(chalk.yellow("Using magic link authentication..."));
-      await this.api.authenticateWithMagicLink(TestConfig.TEST_MAGIC_LINK);
+      await this.api.authenticateWithMagicLink(
+        TestConfig.TEST_MAGIC_LINK,
+        TestConfig.DEVICE_INFO,
+        TestConfig.GPS_INFO
+      );
       console.log(chalk.green("✓ Magic link authentication successful"));
       return;
     }
@@ -161,7 +167,7 @@ class AutomatedTestRunner {
       },
       {
         name: "Driver Configuration",
-        test: () => this.api.getDriverLoggedInConfiguration()
+        test: () => this.api.getLoggedInDriverConfiguration()
       },
       {
         name: "Home Screen",
@@ -193,7 +199,7 @@ class AutomatedTestRunner {
       },
       {
         name: "Modal Info",
-        test: () => this.api.getModalInfo(TestConfig.GPS_INFO)
+        test: () => this.api.getModal(TestConfig.GPS_INFO, "foreground")
       }
     ];
 
@@ -245,28 +251,29 @@ class AutomatedTestRunner {
         )
       },
       {
-        name: "Order History",
-        test: () => this.api.getOrderHistory(TestConfig.GPS_INFO, 10, 0)
-      },
-      {
-        name: "Ride Details (Mock)",
-        test: async () => {
-          // Try to get a ride from order history first
-          try {
-            const history = await this.api.getOrderHistory(TestConfig.GPS_INFO, 1, 0);
-            if (history.orders && history.orders.length > 0) {
-              const order = history.orders[0];
-              return await this.api.getRideDetails(
-                TestConfig.GPS_INFO,
-                order.order_handle
-              );
-            }
-          } catch {
-            // Skip if no orders
-          }
-          throw new Error("No orders available for ride details test");
-        }
+        name: "Order History Paginated",
+        test: () => this.api.getOrderHistoryPaginated(TestConfig.GPS_INFO, 10, 0)
       }
+      // Ride Details endpoint doesn't exist - commented out
+      // {
+      //   name: "Ride Details (Mock)",
+      //   test: async () => {
+      //     // Try to get a ride from order history first
+      //     try {
+      //       const history = await this.api.getOrderHistoryPaginated(TestConfig.GPS_INFO, 1, 0);
+      //       if (history.orders && history.orders.length > 0) {
+      //         const order = history.orders[0];
+      //         return await this.api.getRideDetails(
+      //           TestConfig.GPS_INFO,
+      //           order.order_handle
+      //         );
+      //       }
+      //     } catch {
+      //       // Skip if no orders
+      //     }
+      //     throw new Error("No orders available for ride details test");
+      //   }
+      // }
     ];
 
     for (const endpoint of rideEndpoints) {
@@ -290,34 +297,35 @@ class AutomatedTestRunner {
     const earningsEndpoints = [
       {
         name: "Earnings Landing Screen",
-        test: () => this.api.getEarningsLandingScreen(TestConfig.GPS_INFO)
-      },
-      {
-        name: "Earnings Breakdown",
-        test: () => this.api.getEarningsBreakdown(TestConfig.GPS_INFO)
-      },
-      {
-        name: "Earnings Chart (Weekly)",
-        test: () => this.api.getEarningsChart(
-          TestConfig.GPS_INFO,
-          EarningsChartType.Weekly
-        )
-      },
-      {
-        name: "Earnings Daily Breakdown",
-        test: () => this.api.getEarningsDailyBreakdown(
-          TestConfig.GPS_INFO,
-          new Date().toISOString().split('T')[0]
-        )
-      },
-      {
-        name: "Cash Out Options",
-        test: () => this.api.getCashOutOptions(TestConfig.GPS_INFO)
-      },
-      {
-        name: "Balance History",
-        test: () => this.api.getBalanceHistory(TestConfig.GPS_INFO)
+        test: () => this.api.getEarningLandingScreen(TestConfig.GPS_INFO)
       }
+      // The following endpoints don't exist in the API - commented out
+      // {
+      //   name: "Earnings Breakdown",
+      //   test: () => this.api.getEarningsBreakdown(TestConfig.GPS_INFO)
+      // },
+      // {
+      //   name: "Earnings Chart (Weekly)",
+      //   test: () => this.api.getEarningsChart(
+      //     TestConfig.GPS_INFO,
+      //     EarningsChartType.Weekly
+      //   )
+      // },
+      // {
+      //   name: "Earnings Daily Breakdown",
+      //   test: () => this.api.getEarningsDailyBreakdown(
+      //     TestConfig.GPS_INFO,
+      //     new Date().toISOString().split('T')[0]
+      //   )
+      // },
+      // {
+      //   name: "Cash Out Options",
+      //   test: () => this.api.getCashOutOptions(TestConfig.GPS_INFO)
+      // },
+      // {
+      //   name: "Balance History",
+      //   test: () => this.api.getBalanceHistory(TestConfig.GPS_INFO)
+      // }
     ];
 
     for (const endpoint of earningsEndpoints) {
@@ -343,18 +351,19 @@ class AutomatedTestRunner {
         name: "Help Details",
         test: () => this.api.getHelpDetails(TestConfig.GPS_INFO)
       },
+      // Support Chat Conversations and News List endpoints don't exist - commented out
+      // {
+      //   name: "Support Chat Conversations",
+      //   test: () => this.api.getSupportChatConversations(TestConfig.GPS_INFO)
+      // },
       {
-        name: "Support Chat Conversations",
-        test: () => this.api.getSupportChatConversations(TestConfig.GPS_INFO)
-      },
-      {
-        name: "Driver Stories",
-        test: () => this.api.getDriverStories(TestConfig.GPS_INFO)
-      },
-      {
-        name: "News List",
-        test: () => this.api.getNewsList(TestConfig.GPS_INFO)
+        name: "Driver State (Support Section)",
+        test: () => this.api.getDriverState(TestConfig.GPS_INFO, "foreground")
       }
+      // {
+      //   name: "News List",
+      //   test: () => this.api.getNewsList(TestConfig.GPS_INFO)
+      // }
     ];
 
     for (const endpoint of supportEndpoints) {
@@ -416,7 +425,7 @@ class AutomatedTestRunner {
       await this.testAuthentication();
       
       // If authenticated, run all other tests
-      if (this.api.isAuthenticated()) {
+      if (await this.api.validateExistingToken()) {
         console.log(chalk.cyan("\n📡 Testing Driver Endpoints..."));
         await this.testDriverEndpoints();
         await this.testRideEndpoints();

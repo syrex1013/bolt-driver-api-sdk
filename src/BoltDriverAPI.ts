@@ -243,7 +243,9 @@ export class BoltDriverAPI {
     );
 
     // Initialize authentication from stored token
-    this.initializeFromStoredToken();
+    this.initializeFromStoredToken().catch((error) => {
+      this.logger.debug("Failed to initialize from stored token", error);
+    });
   }
 
   /**
@@ -924,7 +926,7 @@ export class BoltDriverAPI {
             accessToken: this.accessToken,
             refreshToken: this.refreshToken,
             tokenType: "bearer",
-            expiresAt: Math.floor(Date.now() / 1000) + 3600, // 1 hour from now
+            expiresAt: (Math.floor(Date.now() / 1000) + 3600) * 1000, // 1 hour from now, converted to milliseconds
           };
 
           // Set the session info
@@ -1315,7 +1317,7 @@ export class BoltDriverAPI {
    */
   async getEmergencyAssistProvider(
     gpsInfo: GpsInfo
-  ): Promise<ExternalHelpProvider> {
+  ): Promise<ApiResponse<ExternalHelpProvider>> {
     const url = `${this.config.driverBaseUrl}/safety/emergencyAssist/getExternalHelpProvider`;
     const params = this.buildRequestParams(gpsInfo);
     params.lat = gpsInfo.latitude;
@@ -1332,7 +1334,7 @@ export class BoltDriverAPI {
         url,
         { params }
       );
-      return response.data.data;
+      return response.data;
     } catch (error) {
       this.logger.error("Failed to get emergency assist provider", error);
       if (error instanceof BoltApiError) {
@@ -1455,7 +1457,7 @@ export class BoltDriverAPI {
    * @returns Promise that resolves when data is stored
    * @throws {BoltApiError} When API request fails
    */
-  async storeDriverInfo(driverData: any): Promise<void> {
+  async storeDriverInfo(driverData: Record<string, unknown>): Promise<void> {
     const url = `${this.config.driverBaseUrl}/store`;
     const params = this.buildRequestParams();
     const data = driverData;
@@ -1586,7 +1588,7 @@ export class BoltDriverAPI {
    * @returns Promise resolving to driver phone details
    * @throws {BoltApiError} When API request fails
    */
-  async getDriverPhoneDetails(gpsInfo: GpsInfo): Promise<any> {
+  async getDriverPhoneDetails(gpsInfo: GpsInfo): Promise<ApiResponse<Record<string, unknown>>> {
     const url = `${this.config.driverBaseUrl}/driverPhoneDetails`;
     const params = this.buildRequestParams(gpsInfo);
     const data = {};
@@ -1596,7 +1598,7 @@ export class BoltDriverAPI {
       const response = await this.client.post<ApiResponse<any>>(url, data, {
         params,
       });
-      return response.data.data;
+      return response.data;
     } catch (error) {
       this.logger.error("Failed to get driver phone details", error);
       if (error instanceof BoltApiError) {
@@ -1750,7 +1752,7 @@ export class BoltDriverAPI {
    * @returns Parsed response data or throws an error if parsing fails
    * @private
    */
-  private parseApiResponse<T>(response: AxiosResponse<any>): T {
+  private parseApiResponse<T>(response: AxiosResponse<T | ApiResponse<T>>): T {
     this.logger.debug("Parsing API response", { response });
 
     if (!response.data) {
@@ -1761,57 +1763,64 @@ export class BoltDriverAPI {
       );
     }
 
-    // Handle ApiResponse wrapper format
-    if (response.data.code !== undefined && response.data.data !== undefined) {
-      if (response.data.code === 0) {
-        return response.data.data as T;
+    // Check if the response matches the ApiResponse structure
+    if (this.isApiResponse(response.data)) {
+      const apiResponse = response.data;
+      if (apiResponse.code === 0) {
+        return apiResponse.data as T;
       } else {
         // Handle specific error codes
         if (
-          response.data.code === 503 &&
-          response.data.message === "NOT_AUTHORIZED"
+          apiResponse.code === 503 &&
+          apiResponse.message === "NOT_AUTHORIZED"
         ) {
           this.logger.warn(
             "NOT_AUTHORIZED: Token is invalid or has expired. Clearing credentials."
           );
           this.clearAuthentication();
-          throw new NotAuthorizedError("NOT_AUTHORIZED", response.data);
+          throw new NotAuthorizedError("NOT_AUTHORIZED", apiResponse);
         }
 
         throw new BoltApiError(
-          `API returned error code ${response.data.code}: ${
-            response.data.message || "Unknown error"
+          `API returned error code ${apiResponse.code}: ${
+            apiResponse.message || "Unknown error"
           }`,
-          response.data.code,
-          response.data
+          apiResponse.code,
+          apiResponse
         );
       }
     }
 
-    // Handle direct data format (data is the actual response)
+    // Handle direct data format (data is the actual response, potentially with some defaultable fields)
     if (typeof response.data === "object" && response.data !== null) {
+      const directData = response.data as any; // Use any temporarily for flexible property access
       // Ensure items is always an array if it exists
       if (
-        response.data.items !== undefined &&
-        !Array.isArray(response.data.items)
+        directData.items !== undefined &&
+        !Array.isArray(directData.items)
       ) {
         this.logger.warn("Items is not an array, converting to empty array", {
-          items: response.data.items,
+          items: directData.items,
         });
-        response.data.items = [];
+        directData.items = [];
       }
 
       // Ensure pollIntervalSec has a default value if missing
-      if (response.data.pollIntervalSec === undefined) {
+      if (directData.pollIntervalSec === undefined) {
         this.logger.warn("pollIntervalSec is undefined, setting default value");
-        response.data.pollIntervalSec = 30; // Default 30 seconds
+        directData.pollIntervalSec = 30; // Default 30 seconds
       }
 
-      return response.data as T;
+      return directData as T;
     }
 
-    // Fallback to direct data
+    // Fallback to direct data if no specific structure is matched
     return response.data as T;
+  }
+
+  // Type guard to check if a response is an ApiResponse
+  private isApiResponse<T>(data: T | ApiResponse<T>): data is ApiResponse<T> {
+    return (typeof data === 'object' && data !== null && 'code' in data && 'message' in data && 'data' in data);
   }
 
   /**
@@ -2000,18 +2009,47 @@ export class BoltDriverAPI {
    * @returns boolean indicating if token is expired
    */
   private isTokenExpired(): boolean {
-    // If no session info or no expiration time, consider token expired
-    if (!this.sessionInfo) {
+    // Log current access token status
+    this.logger.debug(`isTokenExpired called. accessToken present: ${!!this.accessToken}, sessionInfo present: ${!!this.sessionInfo}`);
+    // If no access token, consider expired
+    if (!this.accessToken) {
       return true;
     }
 
-    // For testing purposes, if driverId exists, consider token valid
-    if (this.sessionInfo.driverId) {
-      return false;
+    // Check JWT token expiry first (most reliable)
+    try {
+      const parts = this.accessToken.split(".");
+      if (parts.length === 3) {
+        const payloadPart = parts[1];
+        if (payloadPart) {
+          const base64 = payloadPart.replace(/-/g, "+").replace(/_/g, "/");
+          const paddedBase64 = base64.padEnd(
+            base64.length + ((4 - (base64.length % 4)) % 4),
+            "="
+          );
+          const payload = JSON.parse(
+            Buffer.from(paddedBase64, "base64").toString()
+          );
+          
+          // Check JWT exp field (in seconds, convert to milliseconds)
+          if (payload.exp) {
+            const jwtExpiry = payload.exp * 1000;
+            if (Date.now() >= jwtExpiry) {
+              return true;
+            }
+          }
+        }
+      }
+    } catch (error) {
+      this.logger.warn("Failed to parse JWT for expiry check", error);
     }
 
-    // If no expiration time, consider token expired
-    if (!this.sessionInfo.expiresAt) {
+    // Log sessionInfo expiry details
+    this.logger.debug(`SessionInfo: ${JSON.stringify(this.sessionInfo)}`);
+    this.logger.debug(`Current time: ${Date.now()}, expiresAt: ${this.sessionInfo?.expiresAt}`);
+
+    // Fallback to sessionInfo expiry check
+    if (!this.sessionInfo || !this.sessionInfo.expiresAt) {
       return true;
     }
 
@@ -2454,9 +2492,11 @@ export class BoltDriverAPI {
    * @returns Promise resolving to boolean indicating if token is valid
    */
   async validateExistingToken(): Promise<boolean> {
+    this.logger.debug("Starting validateExistingToken...");
+
     if (!this.accessToken && !this.refreshToken) {
-      this.logger.debug("No tokens available for validation");
-      return false;
+      this.logger.debug("No tokens available in memory for validation, checking storage.");
+      // Don't return false immediately - try to load from storage first
     }
 
     try {
@@ -2464,8 +2504,11 @@ export class BoltDriverAPI {
 
       // First, try to load token from storage if not already loaded
       if (!this.accessToken) {
+        this.logger.debug("Loading token from storage...");
         const tokenData = await this.tokenStorage.loadToken();
+        this.logger.debug(`Token data loaded: ${!!tokenData}`);
         if (tokenData) {
+          this.logger.debug("Token data found, setting access token");
           this.accessToken = tokenData.token;
           this.refreshToken = tokenData.token; // In Bolt's system, the JWT token serves as both access and refresh token
           this.sessionInfo = tokenData.sessionInfo;
@@ -2481,12 +2524,13 @@ export class BoltDriverAPI {
                 companyId: sessionInfo.companyId || 1,
                 companyCityId: sessionInfo.companyCityId || 1,
               };
+              this.logger.debug("Successfully extracted driver info from JWT");
             } catch (jwtError) {
               this.logger.warn("Could not extract session info from JWT", jwtError);
             }
           }
         } else {
-          this.logger.debug("No token data found in storage");
+          this.logger.debug("No token data returned from storage (likely expired)");
           return false;
         }
       }
@@ -2509,19 +2553,15 @@ export class BoltDriverAPI {
       }
     } catch (error) {
       this.logger.warn("Token validation failed", error);
+      this.logger.debug(`Error details: ${JSON.stringify(error)}`);
 
-      // Clear invalid tokens
+      // Clear invalid tokens from memory only (don't delete the file)
       this.accessToken = undefined;
       this.refreshToken = undefined;
       this.sessionInfo = undefined;
       this.driverInfo = undefined;
 
-      // Try to clear from storage as well
-      try {
-        await this.tokenStorage.clearToken();
-      } catch (storageError) {
-        this.logger.warn("Failed to clear invalid token from storage", storageError);
-      }
+      this.logger.debug("Token validation failed - cleared from memory but preserved file");
 
       if (error instanceof BoltApiError) {
         if (error.statusCode === 401) {
@@ -2599,7 +2639,7 @@ export class BoltDriverAPI {
    * @returns Promise resolving to driver configuration
    * @throws {BoltApiError} When the request fails
    */
-  async getLoggedInDriverConfiguration(): Promise<any> {
+  async getLoggedInDriverConfiguration(): Promise<Record<string, unknown>> {
     try {
       this.logger.info("Getting logged in driver configuration");
 
@@ -2748,7 +2788,7 @@ export class BoltDriverAPI {
    * Get default driver configuration when API data is not available
    * @returns Default driver configuration object
    */
-  private getDefaultDriverConfiguration(): any {
+  private getDefaultDriverConfiguration(): Record<string, unknown> {
     const driverId = this.driverInfo?.driverId || 1;
     const partnerId = this.driverInfo?.partnerId || 1;
     const companyId = this.driverInfo?.companyId || 1;

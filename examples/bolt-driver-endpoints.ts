@@ -62,9 +62,8 @@ export async function runBoltDriverExample(existingApi?: BoltDriverAPI) {
       borderStyle: "round",
         borderColor: "green",
     })
-  );
-
-  const tokenStorage = new FileTokenStorage();
+  );  
+  const tokenStorage = new FileTokenStorage(".bolt-token.json");
   const api =
     existingApi ||
     new BoltDriverAPI(
@@ -83,10 +82,30 @@ export async function runBoltDriverExample(existingApi?: BoltDriverAPI) {
         theme: "dark",
       },
       {}, // Empty config object
-      tokenStorage
+      tokenStorage,
+      {
+        enabled: true,
+        level: 'debug',
+        logRequests: true,
+        logResponses: true,
+        logErrors: true
+      }
     );
 
-  const isAuthenticated = await api.isAuthenticated();
+    // Display the token storage file path in a clear format
+    console.log(`TOKEN FILE: ${tokenStorage.filePath}`);
+
+    // Read and display the contents of the token file (if it exists)
+    try {
+      const fs = await import('fs/promises');
+      const content = await fs.readFile(tokenStorage.filePath, 'utf8');
+      console.log(`TOKEN CONTENT: ${content}`);
+    } catch (err) {
+      console.log("TOKEN CONTENT: (No token file found or unable to read)");
+    }
+
+    // Load and validate existing token from storage
+    const isAuthenticated = await api.validateExistingToken();
 
   if (!isAuthenticated) {
     logError(
@@ -238,6 +257,7 @@ export async function runBoltDriverExample(existingApi?: BoltDriverAPI) {
   );
 }
 
+// Only run if this file is executed directly (not imported)
 if (require.main === module) {
   runBoltDriverExample().catch((error) => {
     logError("Unhandled Error in Bolt Driver Example", error);
