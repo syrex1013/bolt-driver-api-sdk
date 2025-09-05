@@ -69,7 +69,7 @@ jobs:
       timeout-minutes: 15
       
     - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v3
+      uses: codecov/codecov-action@v4
       with:
         file: ./coverage/lcov.info
         flags: unittests
@@ -106,7 +106,7 @@ jobs:
         test -f dist/BoltDriverAPI.d.ts
         
     - name: Upload build artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: dist-files
         path: dist/

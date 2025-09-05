@@ -67,8 +67,6 @@ jobs:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         lcov-file: ./coverage/lcov.info
         delete-old-comments: true
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   dependency-check:
     name: Dependency Check
