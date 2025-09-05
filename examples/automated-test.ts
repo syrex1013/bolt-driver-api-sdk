@@ -64,7 +64,7 @@ class TestConfig {
 
   // Test credentials
   static readonly CREDENTIALS: Credentials = {
-    phone: process.env['TEST_PHONE'] || "+48500499993",
+    phone: process.env['TEST_PHONE'] || "+48123456789",
     driver_id: "test_driver_" + Date.now(),
     session_id: "test_session_" + Date.now()
   };
