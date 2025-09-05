@@ -309,8 +309,14 @@ export class BoltDriverAPI {
 
   /**
    * Extract session information from JWT token
-   * @param token - JWT token
-   * @returns SessionInfo object
+   * Parses the JWT payload and extracts driver, partner, and company information
+   * @private
+   * @param {string} token - JWT access token to parse
+   * @returns {SessionInfo} Extracted session information including driver and company IDs
+   * @throws {Error} If token is invalid or missing required fields
+   * @example
+   * const sessionInfo = this.extractSessionInfoFromJWT(accessToken);
+   * console.log(sessionInfo.driverId); // 12345
    */
   private extractSessionInfoFromJWT(token: string): SessionInfo {
     try {
@@ -1015,10 +1021,18 @@ export class BoltDriverAPI {
 
   /**
    * Get driver state and polling information
-   * @param gpsInfo - GPS location and accuracy information
-   * @param appState - Application state (default: 'background')
-   * @returns Promise resolving to driver state information
+   * Retrieves current driver status, active orders, and system state
+   * @param {GpsInfo} gpsInfo - GPS location and accuracy information
+   * @param {string} appState - Application state (default: 'background', can be 'foreground')
+   * @returns {Promise<DriverState>} Promise resolving to driver state including polling intervals and order status
    * @throws {BoltApiError} When API request fails
+   * @example
+   * const state = await api.getDriverState({
+   *   latitude: 59.4370,
+   *   longitude: 24.7536,
+   *   accuracy: 10
+   * });
+   * console.log(state.driver_status); // 'online', 'offline', 'busy'
    */
   async getDriverState(
     gpsInfo: GpsInfo,
@@ -1466,9 +1480,22 @@ export class BoltDriverAPI {
 
   /**
    * Send magic link to email for authentication
-   * @param email - Email address to send magic link to
-   * @returns Promise resolving to magic link response
+   * Alternative authentication method when SMS limit is reached or SMS is unavailable
+   * @param {string} email - Email address to send magic link to
+   * @returns {Promise<MagicLinkResponse>} Promise resolving to magic link response with success status
    * @throws {BoltApiError} When magic link sending fails
+   * @example
+   * // Use when SMS authentication fails with SMS_LIMIT_REACHED
+   * try {
+   *   await api.startAuthentication(...);
+   * } catch (error) {
+   *   if (error.code === 299) { // SMS_LIMIT_REACHED
+   *     const response = await api.sendMagicLink('driver@example.com');
+   *     console.log('Magic link sent to email');
+   *   }
+   * }
+   * @see {@link authenticateWithMagicLink} - Complete authentication with magic link
+   * @since 1.0.0
    */
   async sendMagicLink(email: string): Promise<MagicLinkResponse> {
     try {

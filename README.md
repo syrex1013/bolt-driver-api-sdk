@@ -1,714 +1,462 @@
 # Bolt Driver API SDK
 
-[![npm version](https://badge.fury.io/js/bolt-driver-api.svg)](https://badge.fury.io/js/bolt-driver-api)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.2+-blue.svg)](https://www.typescriptlang.org/)
-[![Node.js](https://img.shields.io/badge/Node.js-16+-green.svg)](https://nodejs.org/)
+<div align="center">
 
-> **Official Node.js SDK for Bolt Driver API** - Communicate with Bolt's driver platform programmatically, just like the mobile app.
+![Bolt Driver API](https://img.shields.io/badge/Bolt-Driver%20API-00D100?style=for-the-badge&logo=bolt&logoColor=white)
+![npm version](https://img.shields.io/npm/v/bolt-driver-api?style=for-the-badge)
+![License](https://img.shields.io/npm/l/bolt-driver-api?style=for-the-badge)
+![Build Status](https://img.shields.io/github/actions/workflow/status/bolt-driver-api/bolt-driver-api-sdk/test.yml?style=for-the-badge)
+![Coverage](https://img.shields.io/codecov/c/github/bolt-driver-api/bolt-driver-api-sdk?style=for-the-badge)
 
-This SDK provides comprehensive access to Bolt's driver ecosystem, enabling developers to build powerful applications that integrate seamlessly with Bolt's ride-hailing platform.
+**The official Node.js SDK for integrating with Bolt's driver platform API**
 
-## ✨ Features
+[Documentation](#documentation) • [Quick Start](#quick-start) • [Examples](#examples) • [API Reference](#api-reference) • [Contributing](#contributing)
 
-- 🔐 **Complete Authentication Flow** - SMS-based authentication with phone number verification
-- 🎯 **Real API Integration** - Direct integration with Bolt's production driver platform APIs
-- 📱 **Device Simulation** - Mimics real mobile app behavior and device information
-- 🗺️ **GPS Integration** - Location-based API calls with real-time coordinates
-- 🚗 **Driver Operations** - Get driver state, home screen, working time, earnings, and more
-- 💾 **Token Persistence** - Automatically save and restore authentication tokens
-- 📝 **Comprehensive Logging** - Configurable logging for requests, responses, and errors
-- 🧪 **Full Test Coverage** - Comprehensive test suite with real API testing
-- 📚 **Interactive Examples** - Multiple working examples demonstrating all features
+</div>
 
-## 🚀 Quick Start
+---
 
-### Installation
+## 🚀 Overview
+
+The Bolt Driver API SDK provides complete access to Bolt's driver platform, enabling developers to build applications that interact with Bolt's ride-hailing services. This SDK offers the same functionality as the official Bolt Driver mobile application, including authentication, ride management, earnings tracking, and real-time GPS updates.
+
+### ✨ Key Features
+
+- 🔐 **Complete Authentication Flow** - SMS and magic link authentication support
+- 🚗 **Real-time Driver Management** - Update status, location, and availability
+- 📍 **GPS Tracking** - Continuous location updates with accuracy metrics
+- 💰 **Earnings & Analytics** - Track earnings, view statistics, and payment history
+- 🎯 **Ride Management** - Accept, reject, and manage ride requests
+- 📊 **Comprehensive Logging** - Built-in request/response logging for debugging
+- 🔄 **Automatic Token Management** - Handles token refresh and persistence
+- 🌍 **Multi-region Support** - Works with all Bolt operating regions
+
+## 📦 Installation
 
 ```bash
 npm install bolt-driver-api
 ```
 
+or using yarn:
+
+```bash
+yarn add bolt-driver-api
+```
+
+## 🎯 Quick Start
+
 ### Basic Usage
 
 ```typescript
-import { BoltDriverAPI, DeviceInfo, AuthConfig } from 'bolt-driver-api';
+import { BoltDriverAPI } from 'bolt-driver-api';
 
-// Configure device and authentication
-const deviceInfo: DeviceInfo = {
-  deviceId: 'your-device-id',
-  deviceType: 'iphone',
-  deviceName: 'iPhone17,3',
-  deviceOsVersion: 'iOS18.6',
-  appVersion: 'DI.116.0'
-};
-
-const authConfig: AuthConfig = {
-  authMethod: 'phone',
-  brand: 'bolt',
-  country: 'pl',
-  language: 'en-GB',
-  theme: 'dark'
-};
-
-// Initialize API
-const api = new BoltDriverAPI(deviceInfo, authConfig);
+// Initialize the API client
+const api = new BoltDriverAPI(
+  {
+    deviceId: 'unique-device-id',
+    deviceType: 'iphone',
+    deviceName: 'iPhone 15 Pro',
+    deviceOsVersion: 'iOS 17.0',
+    appVersion: 'DI.116.0'
+  },
+  {
+    country: 'pl',
+    language: 'en-GB',
+    brand: 'bolt'
+  }
+);
 
 // Start authentication
 const authResponse = await api.startAuthentication(
-  authConfig,
   deviceInfo,
-  { phone: '+48500123456' }
+  authConfig,
+  {
+    phone: '+48123456789',
+    driver_id: 'driver_123',
+    session_id: 'session_123'
+  }
 );
 
 // Confirm with SMS code
-const confirmResponse = await api.confirmAuthentication(
-  authConfig,
-  deviceInfo,
-  { verification_token: authResponse.data.verification_token },
-  '123456' // SMS code
-);
+await api.confirmAuthentication(authResponse.sessionId, '1234');
 
-// API is now authenticated and ready to use!
+// Now you can use all API methods
 const driverState = await api.getDriverState({
   latitude: 52.237049,
   longitude: 21.017532,
-  accuracy: 5.0,
-  bearing: 90.5,
-  speed: 25.3,
-  timestamp: Math.floor(Date.now() / 1000),
-  age: 2.5,
-  accuracyMeters: 5.0,
-  adjustedBearing: 90.5,
-  bearingAccuracyDeg: 2.0,
-  speedAccuracyMps: 1.5
+  accuracy: 10
 });
 ```
 
-## 📖 Documentation
-
-📚 **[Complete API Documentation](https://bolt-driver-api.github.io/bolt-driver-api-sdk/)** - Comprehensive guides, examples, and API reference
-
-### Available Methods
-
-#### Authentication
-- `startAuthentication()` - Initiate SMS authentication
-- `confirmAuthentication()` - Complete SMS verification
-- `authenticateWithMagicLink()` - Magic link authentication
-- `isAuthenticated()` - Check authentication status
-- `validateToken()` - Validate existing token
-
-#### Driver Operations
-- `getDriverState()` - Get current driver status and polling info
-- `getDriverHomeScreen()` - Get driver's home screen data
-- `getWorkingTimeInfo()` - Get working time information
-- `getDriverNavBarBadges()` - Get navigation bar notifications
-- `getLoggedInDriverConfiguration()` - Get driver profile and settings
-
-#### Business Operations
-- `getScheduledRideRequests()` - Get scheduled rides
-- `getEarningLandingScreen()` - Get earnings overview
-- `getActivityRides()` - Get ride activity history
-- `getOrderHistoryPaginated()` - Get paginated order history
-
-#### Location & Maps
-- `getMapsConfigs()` - Get map configuration
-- `getMapTile()` - Get map tiles for heatmaps
-- `getOtherActiveDrivers()` - Get nearby active drivers
-
-#### Utilities
-- `setRequestLogging()` - Control request/response logging
-- `getLoggingConfig()` - Get current logging configuration
-- `clearAuthentication()` - Clear stored tokens
-
-🔗 **[Quick Start Guide](https://bolt-driver-api.github.io/bolt-driver-api-sdk/quick-start.html)** - Get up and running in minutes
-
-🛠️ **[API Reference](https://bolt-driver-api.github.io/bolt-driver-api-sdk/api/)** - Detailed TypeScript definitions and method documentation
-
-## Requirements
-
-- **Node.js**: >= 16.0.0
-- **TypeScript**: >= 5.2 (for development)
-- **npm/yarn/pnpm**: Latest stable version
-
-## Quick Start
+### Magic Link Authentication (Alternative)
 
 ```typescript
-import { BoltDriverAPI, DeviceInfo, AuthConfig } from 'bolt-driver-api';
-
-// Configure device information
-const deviceInfo: DeviceInfo = {
-  deviceId: 'your-device-id',
-  deviceType: 'iphone',
-  deviceName: 'iPhone17,3',
-  deviceOsVersion: 'iOS18.6',
-  appVersion: 'DI.116.0'
-};
-
-// Configure authentication
-const authConfig: AuthConfig = {
-  authMethod: 'phone',
-  brand: 'bolt',
-  country: 'pl',
-  language: 'en-GB',
-  theme: 'dark'
-};
-
-// Create API instance
-const boltAPI = new BoltDriverAPI(deviceInfo, authConfig);
-
-// Start authentication
-const authResponse = await boltAPI.startAuthentication('+48123456789');
-console.log('SMS sent to:', authResponse.verification_code_target);
-
-// Confirm with SMS code
-const confirmResponse = await boltAPI.confirmAuthentication(
-  authResponse.verification_token, 
-  '123456'
-);
-console.log('Authenticated as:', confirmResponse.type);
+// When SMS limit is reached, use magic link
+try {
+  await api.startAuthentication(...);
+} catch (error) {
+  if (error.code === 299) { // SMS_LIMIT_REACHED
+    // Send magic link to email
+    await api.sendMagicLink('driver@example.com');
+    
+    // After receiving the magic link email
+    const magicLink = 'https://partners.bolt.eu/...';
+    await api.authenticateWithMagicLink(magicLink);
+  }
+}
 ```
 
-## Token Persistence
-
-The API now automatically saves authentication tokens to disk, so you don't need to re-authenticate every time:
-
-```typescript
-import { BoltDriverAPI, FileTokenStorage } from 'bolt-driver-api';
-
-// Use file-based token storage (default)
-const tokenStorage = new FileTokenStorage('.bolt-token.json');
-const boltAPI = new BoltDriverAPI(deviceInfo, authConfig, undefined, tokenStorage);
-
-// On first run: authenticate normally
-await boltAPI.startAuthentication('+48123456789');
-await boltAPI.confirmAuthentication(token, '123456');
-
-// On subsequent runs: token is automatically restored!
-// No need to authenticate again
-const isAuthenticated = boltAPI.isAuthenticated(); // true
-```
-
-## Logging System
-
-Comprehensive logging with configurable levels and output destinations:
-
-```typescript
-import { BoltDriverAPI, LoggingConfig } from 'bolt-driver-api';
-
-const loggingConfig: LoggingConfig = {
-  enabled: true,
-  level: 'info',
-  logRequests: true,      // Log all API requests
-  logResponses: false,    // Don't log responses (can be verbose)
-  logErrors: true,        // Log all errors
-  logToFile: true,        // Write logs to file
-  logFilePath: './bolt-api.log'
-};
-
-const boltAPI = new BoltDriverAPI(deviceInfo, authConfig, undefined, undefined, loggingConfig);
-
-// Update logging configuration at runtime
-boltAPI.updateLoggingConfig({ logResponses: true });
-
-// Control request/response logging dynamically
-boltAPI.setRequestLogging(false); // Disable all request/response logging
-boltAPI.setRequestLogging(true, { logRequests: true, logResponses: false }); // Custom control
-
-// Get current logging configuration
-const currentConfig = boltAPI.getLoggingConfig();
-console.log('Current logging:', currentConfig);
-```
-
-### Logging Control
-
-The SDK provides fine-grained control over request/response logging to help you manage console output:
-
-```typescript
-// Disable all request/response logging (keep errors)
-boltAPI.setRequestLogging(false);
-
-// Enable only request logging
-boltAPI.setRequestLogging(true, { logRequests: true, logResponses: false });
-
-// Enable only response logging  
-boltAPI.setRequestLogging(true, { logRequests: false, logResponses: true });
-
-// Enable both request and response logging
-boltAPI.setRequestLogging(true, { logRequests: true, logResponses: true });
-
-// Disable all logging except errors
-boltAPI.setRequestLogging(false, { logErrors: true });
-
-// Get current logging configuration
-const config = boltAPI.getLoggingConfig();
-console.log('Requests:', config.logRequests);
-console.log('Responses:', config.logResponses);
-console.log('Errors:', config.logErrors);
-```
-
-**Use Cases:**
-- **Development**: Enable full logging for debugging
-- **Production**: Disable request/response logging, keep errors
-- **Debugging**: Focus on specific log types
-- **Performance**: Reduce console noise in high-traffic scenarios
-
-## API Methods
+## 📚 Documentation
 
 ### Authentication
 
-- `startAuthentication(phoneNumber)` - Start SMS verification
-- `confirmAuthentication(token, code)` - Complete authentication with SMS code
-- `sendMagicLink(email)` - Send magic link to email for authentication
-- `authenticateWithMagicLink(token, deviceInfo)` - Authenticate using magic link token
-- `getAccessToken()` - Get driver access token
-- `getCurrentRefreshToken()` - Get current refresh token
-- `clearAuthentication()` - Clear stored authentication
+The SDK supports two authentication methods:
 
-### Driver Information
-
-- `getDriverState(gpsInfo, appState)` - Get current driver state and polling info
-- `getDriverHomeScreen(gpsInfo)` - Get home screen widgets and layout
-- `getWorkingTimeInfo(gpsInfo)` - Get working time limits and status
-- `getDriverNavBarBadges(gpsInfo)` - Get navigation bar badge information
-
-### Dispatch & Orders
-
-- `getDispatchPreferences(gpsInfo)` - Get order acceptance settings
-- `getMapsConfigs(gpsInfo)` - Get maps and surge heatmap configuration
-- `getMapTile(gpsInfo, collectionId, x, y, zoom)` - Get map tiles for surge areas
-
-### Safety & Support
-
-- `getEmergencyAssistProvider(gpsInfo)` - Get emergency assistance information
-- `getModal(gpsInfo, event)` - Get modal information for UI events
-
-### Driver Network
-
-- `getOtherActiveDrivers(gpsInfo)` - Get other active drivers in the area
-
-### Push Notifications
-
-- `setDeviceToken(token)` - Set device token for push notifications
-- `updatePushProfile(userId, instanceId, token)` - Update push notification profile
-
-### Device Management
-
-- `storeDriverInfo(data)` - Store driver information
-- `getDriverPhoneDetails(gpsInfo)` - Get driver phone details
-
-## Magic Link Authentication
-
-The package supports magic link authentication as an alternative to SMS verification:
+#### 1. SMS Authentication
 
 ```typescript
-import { BoltDriverAPI, FileTokenStorage } from 'bolt-driver-api';
+// Start SMS authentication
+const { sessionId } = await api.startAuthentication(
+  deviceInfo,
+  authConfig,
+  credentials
+);
 
-const boltAPI = new BoltDriverAPI(deviceInfo, authConfig);
+// Confirm with SMS code
+await api.confirmAuthentication(sessionId, smsCode);
+```
 
-// Send magic link to email
-await boltAPI.sendMagicLink('your-email@example.com');
+#### 2. Magic Link Authentication
 
-// When you receive the magic link URL via email, extract the token and authenticate:
-const magicLinkUrl = 'https://partners.bolt.eu/driverapp/magic-login.html?token=...';
-const token = extractTokenFromMagicLink(magicLinkUrl); // Helper function included
+```typescript
+// Send magic link
+await api.sendMagicLink(email);
 
-// Authenticate using the extracted token
-const verificationResponse = await boltAPI.authenticateWithMagicLink(token, deviceInfo);
+// Authenticate with received link
+await api.authenticateWithMagicLink(magicLinkUrl);
+```
 
-if (verificationResponse.code === 0) {
-  console.log('Authentication successful!');
-  console.log('Refresh token received:', verificationResponse.data.refresh_token);
-} else {
-  console.log('Authentication failed:', verificationResponse.message);
+### Driver State Management
+
+```typescript
+// Get current driver state
+const state = await api.getDriverState(gpsInfo);
+console.log(`Status: ${state.driver_status}`); // 'online', 'offline', 'busy'
+console.log(`Active order: ${state.active_order_handle}`);
+
+// Update driver location
+const gpsInfo = {
+  latitude: 52.237049,
+  longitude: 21.017532,
+  accuracy: 10,
+  speed: 0,
+  heading: 0,
+  altitude: 100,
+  timestamp: Date.now()
+};
+
+// Poll for updates based on state.next_polling_in_sec
+setInterval(async () => {
+  const newState = await api.getDriverState(gpsInfo);
+  // Handle state updates
+}, state.next_polling_in_sec * 1000);
+```
+
+### Ride Management
+
+```typescript
+// Get scheduled rides
+const scheduledRides = await api.getScheduledRideRequests(
+  gpsInfo,
+  ScheduledRideRequestGroupBy.Upcoming
+);
+
+// Get ride history
+const history = await api.getOrderHistory(gpsInfo, 10, 0);
+
+// Get ride details
+const rideDetails = await api.getRideDetails(gpsInfo, orderHandle);
+
+// Track active ride
+if (state.active_order_handle) {
+  const activeRide = await api.getRideDetails(
+    gpsInfo,
+    state.active_order_handle
+  );
 }
 ```
 
-### Supported Magic Link URL Formats
-
-- Direct Bolt URLs: `https://partners.bolt.eu/driverapp/magic-login.html?token=...`
-- AWS Tracking URLs: `https://awstrack.me/L0/https:%2F%2Fpartners.bolt.eu%2Fdriverapp%2F...`
-
-The `authenticateWithMagicLink` method sends the token directly to Bolt's API endpoint for verification, providing a secure and direct authentication flow.
-
-### Helper Functions
-
-The package includes a utility function to extract tokens from magic link URLs:
+### Earnings & Analytics
 
 ```typescript
-import { extractTokenFromMagicLink } from 'bolt-driver-api';
+// Get earnings overview
+const earnings = await api.getEarningsLandingScreen(gpsInfo);
 
-// Extract token from various magic link formats
-const token = extractTokenFromMagicLink(magicLinkUrl);
+// Get detailed breakdown
+const breakdown = await api.getEarningsBreakdown(gpsInfo);
+
+// Get weekly/monthly charts
+const weeklyChart = await api.getEarningsChart(
+  gpsInfo,
+  EarningsChartType.Weekly
+);
+
+// Get cash out options
+const cashOutOptions = await api.getCashOutOptions(gpsInfo);
+
+// View balance history
+const balanceHistory = await api.getBalanceHistory(gpsInfo);
 ```
 
-This function handles both direct Bolt URLs and AWS tracking redirects, automatically decoding the token for use with the authentication endpoint.
+### Navigation & Maps
 
-You can test the complete magic link flow with:
+```typescript
+// Get maps configuration
+const mapsConfig = await api.getMapsConfigs(gpsInfo);
 
-```bash
-npm run examples:magic-link
+// Get other active drivers nearby
+const nearbyDrivers = await api.getOtherActiveDrivers(gpsInfo);
+
+// Get emergency assist provider
+const emergencyProvider = await api.getEmergencyAssistProvider(gpsInfo);
 ```
 
-## Examples
+### Support & Help
 
-### Basic Authentication
+```typescript
+// Get help sections
+const helpDetails = await api.getHelpDetails(gpsInfo);
 
-```bash
-npm run examples:auth
+// Get support chat conversations
+const conversations = await api.getSupportChatConversations(gpsInfo);
+
+// Get driver stories/guides
+const stories = await api.getDriverStories(gpsInfo);
+
+// Get news and updates
+const news = await api.getNewsList(gpsInfo);
 ```
 
-### Enhanced Features
+## 🧪 Examples
+
+The SDK includes comprehensive examples demonstrating various use cases:
+
+### Interactive Examples
 
 ```bash
-npm run examples:enhanced
-```
-
-### Magic Link Authentication
-
-```bash
-npm run examples:magic-link
-```
-
-Interactive example demonstrating magic link authentication, token extraction, and all new API endpoints from the HAR file analysis.
-
-### Interactive Menu
-
-```bash
+# Main example - Full authentication and API demo
 npm run examples
+
+# Authentication flow example
+npm run examples:auth
+
+# CLI tool for testing endpoints
+npm run examples:cli
+
+# Enhanced features demo
+npm run examples:enhanced
+
+# Navigation and ride tracking
+npm run examples:navigation
+
+# Magic link authentication
+npm run examples:magic-link
+
+# Bolt driver endpoints showcase
+npm run examples:bolt-driver
 ```
 
-## Testing
-
-Run the full test suite:
+### Automated Testing
 
 ```bash
-npm test
+# Run all examples automatically (no interaction)
+npm run test:examples
+
+# Run all tests including unit and integration tests
+npm run test:all
 ```
 
-Run tests with coverage:
+## 🔧 Configuration
 
-```bash
-npm run test:coverage
-```
-
-Run tests in watch mode:
-
-```bash
-npm run test:watch
-```
-
-## Configuration
-
-### Device Information
+### Device Configuration
 
 ```typescript
-interface DeviceInfo {
-  deviceId: string;           // Unique device identifier
-  deviceType: 'iphone' | 'android';
-  deviceName: string;         // e.g., 'iPhone17,3'
-  deviceOsVersion: string;    // e.g., 'iOS18.6'
-  appVersion: string;         // e.g., 'DI.116.0'
-}
+const deviceInfo: DeviceInfo = {
+  deviceId: 'unique-device-id',    // Unique identifier (UUID recommended)
+  deviceType: 'iphone',             // 'iphone' or 'android'
+  deviceName: 'iPhone 15 Pro',      // Device model name
+  deviceOsVersion: 'iOS 17.0',      // OS version
+  appVersion: 'DI.116.0'            // Bolt app version
+};
 ```
 
 ### Authentication Configuration
 
 ```typescript
-interface AuthConfig {
-  authMethod: 'phone' | 'email';
-  brand: string;              // e.g., 'bolt'
-  country: string;            // e.g., 'pl', 'ee', 'lv'
-  language: string;           // e.g., 'en-GB', 'pl-PL'
-  theme: 'light' | 'dark';
-}
+const authConfig: AuthConfig = {
+  country: 'pl',          // ISO country code
+  language: 'en-GB',      // Language-region code
+  brand: 'bolt'           // Always 'bolt'
+};
 ```
 
-### GPS Information
+### Logging Configuration
 
 ```typescript
-interface GpsInfo {
-  latitude: number;           // GPS latitude
-  longitude: number;          // GPS longitude
-  accuracy: number;           // GPS accuracy in meters
-  bearing: number;            // GPS bearing in degrees
-  speed: number;              // GPS speed in m/s
-  timestamp: number;          // GPS timestamp (Unix)
-  age: number;                // GPS data age in seconds
-}
+const api = new BoltDriverAPI(
+  deviceInfo,
+  authConfig,
+  { /* api config */ },
+  null, // default token storage
+  {
+    level: 'info',           // 'debug' | 'info' | 'warn' | 'error'
+    logRequests: true,       // Log outgoing requests
+    logResponses: true,      // Log incoming responses
+    maskSensitiveData: true  // Mask sensitive information
+  }
+);
 ```
 
-## Error Handling
-
-The SDK provides comprehensive error handling with specific error types:
+### Custom Token Storage
 
 ```typescript
-import { BoltApiError, AuthenticationError, ValidationError } from 'bolt-driver-api';
+import { TokenStorage } from 'bolt-driver-api';
 
-try {
-  await boltAPI.startAuthentication('invalid-phone');
-} catch (error) {
-  if (error instanceof AuthenticationError) {
-    console.log('Authentication failed:', error.message);
-  } else if (error instanceof ValidationError) {
-    console.log('Invalid request:', error.message);
-  } else if (error instanceof BoltApiError) {
-    console.log('API error:', error.message, 'Status:', error.statusCode);
+class CustomTokenStorage implements TokenStorage {
+  async saveToken(token: string, sessionInfo: SessionInfo): Promise<void> {
+    // Your implementation
+  }
+  
+  async loadToken(): Promise<{ token: string; sessionInfo: SessionInfo } | null> {
+    // Your implementation
+  }
+  
+  async clearToken(): Promise<void> {
+    // Your implementation
   }
 }
+
+const api = new BoltDriverAPI(
+  deviceInfo,
+  authConfig,
+  {},
+  new CustomTokenStorage()
+);
 ```
 
-## Logging Output
+## 🛠️ API Reference
 
-When logging is enabled, you'll see detailed information about API calls:
+### Main Classes
 
-```
-[2025-01-22T10:30:15.123Z] [INFO] → GET /driver/getDriverNavBarBadges
-[2025-01-22T10:30:15.456Z] [INFO] ← GET /driver/getDriverNavBarBadges (333ms)
-[2025-01-22T10:30:16.789Z] [ERROR] ✗ POST /driver/getDriverState (150ms) Network error
-```
+#### BoltDriverAPI
 
-## Bolt Driver Endpoints
-
-The following methods are available for Bolt driver-related operations:
-
-### Scheduled Ride Requests
+The main API client class that provides access to all Bolt driver endpoints.
 
 ```typescript
-const scheduledRides = await api.getScheduledRideRequests({
-  brand: 'bolt',
-  country: 'pl',
-  deviceId: 'your_device_id',
-  deviceType: 'iphone',
-  device_name: 'iPhone17,3',
-  device_os_version: 'iOS18.6',
-  driver_id: 'your_driver_id',
-  session_id: 'your_session_id'
-});
+class BoltDriverAPI {
+  constructor(
+    deviceInfo: DeviceInfo,
+    authConfig: AuthConfig,
+    config?: Partial<BoltApiConfig>,
+    tokenStorage?: TokenStorage,
+    loggingConfig?: Partial<LoggingConfig>
+  );
+  
+  // Authentication methods
+  startAuthentication(...): Promise<StartAuthResponse>
+  confirmAuthentication(...): Promise<ConfirmAuthResponse>
+  sendMagicLink(email: string): Promise<MagicLinkResponse>
+  authenticateWithMagicLink(url: string): Promise<MagicLinkVerificationResponse>
+  
+  // Driver state methods
+  getDriverState(gpsInfo: GpsInfo): Promise<DriverState>
+  getDriverHomeScreen(gpsInfo: GpsInfo): Promise<HomeScreenData>
+  
+  // Ride management methods
+  getScheduledRideRequests(...): Promise<ApiResponse>
+  getOrderHistory(...): Promise<OrderHistoryResponse>
+  getRideDetails(...): Promise<RideDetailsResponse>
+  
+  // Earnings methods
+  getEarningsLandingScreen(...): Promise<EarningsLandingScreen>
+  getEarningsBreakdown(...): Promise<EarningsBreakdown>
+  
+  // ... and many more
+}
 ```
 
-### Earnings Landing Screen
+### Types & Interfaces
+
+All TypeScript types are exported and fully documented:
 
 ```typescript
-const earningsScreen = await api.getEarningLandingScreen({
-  brand: 'bolt',
-  country: 'pl',
-  deviceId: 'your_device_id',
-  deviceType: 'iphone',
-  device_name: 'iPhone17,3',
-  device_os_version: 'iOS18.6',
-  driver_id: 'your_driver_id',
-  session_id: 'your_session_id'
-});
+import {
+  DeviceInfo,
+  AuthConfig,
+  GpsInfo,
+  DriverState,
+  OrderHandle,
+  SessionInfo,
+  // ... and more
+} from 'bolt-driver-api';
 ```
 
-### Activity Rides
-
-```typescript
-const activityRides = await api.getActivityRides({
-  brand: 'bolt',
-  country: 'pl',
-  deviceId: 'your_device_id',
-  deviceType: 'iphone',
-  device_name: 'iPhone17,3',
-  device_os_version: 'iOS18.6',
-  driver_id: 'your_driver_id',
-  session_id: 'your_session_id',
-  group_by: 'all'
-});
-```
-
-### Order History
-
-```typescript
-const orderHistory = await api.getOrderHistoryPaginated({
-  brand: 'bolt',
-  country: 'pl',
-  deviceId: 'your_device_id',
-  deviceType: 'iphone',
-  device_name: 'iPhone17,3',
-  device_os_version: 'iOS18.6',
-  driver_id: 'your_driver_id',
-  session_id: 'your_session_id'
-});
-```
-
-### Help Details
-
-```typescript
-const helpDetails = await api.getHelpDetails({
-  brand: 'bolt',
-  country: 'pl',
-  deviceId: 'your_device_id',
-  deviceType: 'iphone',
-  device_name: 'iPhone17,3',
-  device_os_version: 'iOS18.6',
-  driver_id: 'your_driver_id',
-  session_id: 'your_session_id'
-});
-```
-
-### Earn More Details
-
-```typescript
-const earnMoreDetails = await api.getEarnMoreDetails({
-  brand: 'bolt',
-  country: 'pl',
-  deviceId: 'your_device_id',
-  deviceType: 'iphone',
-  device_name: 'iPhone17,3',
-  device_os_version: 'iOS18.6',
-  driver_id: 'your_driver_id',
-  session_id: 'your_session_id'
-});
-```
-
-### Driver Score Overview
-
-```typescript
-const scoreOverview = await api.getScoreOverview({
-  brand: 'bolt',
-  country: 'pl',
-  deviceId: 'your_device_id',
-  deviceType: 'iphone',
-  device_name: 'iPhone17,3',
-  device_os_version: 'iOS18.6',
-  driver_id: 'your_driver_id',
-  session_id: 'your_session_id'
-});
-```
-
-### Driver Sidebar
-
-```typescript
-const driverSidebar = await api.getDriverSidebar({
-  brand: 'bolt',
-  country: 'pl',
-  deviceId: 'your_device_id',
-  deviceType: 'iphone',
-  device_name: 'iPhone17,3',
-  device_os_version: 'iOS18.6',
-  driver_id: 'your_driver_id',
-  session_id: 'your_session_id'
-});
-```
-
-## Bolt Driver Endpoints Example
-
-### Configuration
-
-To run the Bolt driver endpoints example with real API calls, you need to provide configuration through one of two methods:
-
-1. **JSON Credentials File**:
-   Create a `.magic-link-token.json` file in the project root with the following structure:
-
-   ```json
-   {
-     "deviceId": "your_device_id",
-     "deviceType": "iphone",
-     "deviceName": "iPhone17,3",
-     "deviceOsVersion": "iOS18.6",
-     "appVersion": "DI.115.0",
-     "authMethod": "phone",
-     "brand": "bolt",
-     "country": "pl",
-     "language": "en-GB",
-     "theme": "dark",
-     "driver_id": "your_driver_id",
-     "session_id": "your_session_id"
-   }
-   ```
-
-2. **Environment Variables**:
-
-   ```bash
-   # Required environment variables
-   export BOLT_ENABLE_REAL_API_CALLS=true
-   export BOLT_DEVICE_ID=your_device_id
-   export BOLT_DEVICE_TYPE=iphone
-   export BOLT_DEVICE_NAME=iPhone17,3
-   export BOLT_DEVICE_OS_VERSION=iOS18.6
-   export BOLT_APP_VERSION=DI.115.0
-   export BOLT_DRIVER_ID=your_driver_id
-   export BOLT_SESSION_ID=your_session_id
-
-   # Optional configuration
-   export BOLT_AUTH_METHOD=phone
-   export BOLT_BRAND=bolt
-   export BOLT_COUNTRY=pl
-   export BOLT_LANGUAGE=en-GB
-   export BOLT_THEME=dark
-   export BOLT_LOG_LEVEL=debug
-   ```
-
-### Running the Example
+## 🧪 Testing
 
 ```bash
-# Run with mock data (default)
-npm run examples:bolt-driver
+# Run unit tests
+npm test
 
-# Run with real API calls
-BOLT_ENABLE_REAL_API_CALLS=true npm run examples:bolt-driver
+# Run tests with coverage
+npm run test:coverage
+
+# Run tests in watch mode
+npm run test:watch
+
+# Run all tests including examples
+npm run test:all
 ```
 
-### Supported Endpoints
+## 🤝 Contributing
 
-The example demonstrates the following Bolt driver-related endpoints:
+We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
 
-1. `getScheduledRideRequests`: Fetch scheduled ride requests
-2. `getEarningLandingScreen`: Retrieve earnings landing screen details
-3. `getActivityRides`: Get activity rides with optional grouping
-4. `getOrderHistoryPaginated`: Fetch paginated order history
-5. `getHelpDetails`: Retrieve help details
-6. `getEarnMoreDetails`: Get details about earning more
-7. `getScoreOverview`: Fetch driver score overview
-8. `getDriverSidebar`: Get driver sidebar information
+### Development Setup
 
-### Notes
+```bash
+# Clone the repository
+git clone https://github.com/bolt-driver-api/bolt-driver-api-sdk.git
+cd bolt-driver-api-sdk
 
-- By default, the example runs with mock data to prevent unintended API calls.
-- Enable real API calls by setting `BOLT_ENABLE_REAL_API_CALLS=true`.
-- Ensure you have valid credentials before making real API calls.
-- The example supports flexible configuration through a JSON file or environment variables.
-- Log level can be set to `debug`, `info`, `warn`, or `error` for detailed output.
+# Install dependencies
+npm install
 
-## Contributing
+# Run in development mode
+npm run dev
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests for new functionality
-5. Ensure all tests pass
-6. Submit a pull request
+# Build the project
+npm run build
+```
 
-## License
+## 📄 License
 
-MIT License - see [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## Support
+## 🔗 Links
 
-For issues and questions:
+- [GitHub Repository](https://github.com/bolt-driver-api/bolt-driver-api-sdk)
+- [NPM Package](https://www.npmjs.com/package/bolt-driver-api)
+- [API Documentation](https://github.com/bolt-driver-api/bolt-driver-api-sdk/wiki)
+- [Issue Tracker](https://github.com/bolt-driver-api/bolt-driver-api-sdk/issues)
 
-- Check the [examples](examples/) directory
-- Review the [tests](tests/) for usage patterns
-- Open an issue on GitHub
+## 💬 Support
 
-## Changelog
+For support, please open an issue in the [GitHub repository](https://github.com/bolt-driver-api/bolt-driver-api-sdk/issues) or contact us at team@boltdriverapi.com.
 
-### v1.1.0
+---
 
-- ✨ Added token persistence with file and memory storage
-- ✨ Added comprehensive logging system
-- ✨ Added new API methods from latest specifications
-- ✨ Added JSDoc documentation for all methods
-- ✨ Enhanced error handling and debugging
-- ✨ Added enhanced example with all features
-- ✨ Improved test coverage
+<div align="center">
 
-### v1.0.0
+Made with ❤️ by the Bolt Driver API Team
 
-- 🎉 Initial release
-- 🔐 Complete authentication flow
-- 📱 Device simulation
-- 🗺️ GPS integration
-- 🧪 Full test coverage
+</div>

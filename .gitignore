@@ -9,19 +9,39 @@ dist/
 build/
 *.tsbuildinfo
 
-# Environment variables
+# Testing
+coverage/
+.nyc_output/
+*.lcov
+
+# Environment and config
 .env
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
 
-# IDE and editor files
+# Authentication tokens
+.bolt-auth.json
+.bolt-auth-*.json
+auth-tokens.json
+*-auth.json
+
+# IDE
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
+.DS_Store
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
 
 # OS generated files
 .DS_Store
@@ -32,31 +52,126 @@ build/
 ehthumbs.db
 Thumbs.db
 
-# Logs
-logs
-*.log
+# Temporary files
+*.tmp
+*.temp
+.tmp/
+.temp/
 
-# Runtime data
-pids
-*.pid
-*.seed
-*.pid.lock
+# Package files
+*.tgz
 
-# Coverage directory used by tools like istanbul
-coverage/
-*.lcov
+# Debug
+debug/
+.debug/
 
-# nyc test coverage
-.nyc_output
+# Local development
+.local/
+local/
 
-# Dependency directories
-jspm_packages/
+# Backup files
+*.backup
+*.bak
+
+# Editor directories and files
+.idea
+.vscode
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Linux
+*~
+
+# npm
+npm-debug.log*
+.npm
+
+# yarn
+yarn-debug.log*
+yarn-error.log*
+.yarn-integrity
+
+# pnpm
+pnpm-debug.log*
 
 # Optional npm cache directory
 .npm
 
 # Optional eslint cache
 .eslintcache
+
+# Optional stylelint cache
+.stylelintcache
+
+# dotenv environment variable files
+.env
+.env.development.local
+.env.test.local
+.env.production.local
+.env.local
+
+# parcel-bundler cache
+.cache
+.parcel-cache
+
+# Next.js
+.next/
+out/
+
+# Nuxt.js
+.nuxt
+dist
+
+# Gatsby
+.cache/
+public
+
+# vuepress
+.vuepress/dist
+
+# Serverless
+.serverless/
+
+# FuseBox
+.fusebox/
+
+# DynamoDB Local
+.dynamodb/
+
+# TernJS
+.tern-port
+
+# Stores VSCode versions used for testing VSCode extensions
+.vscode-test
+
+# Temporary folders
+tmp/
+temp/
+
+# TypeScript cache
+*.tsbuildinfo
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# Optional stylelint cache
+.stylelintcache
 
 # Microbundle cache
 .rpt2_cache/
@@ -73,33 +188,64 @@ jspm_packages/
 # Yarn Integrity file
 .yarn-integrity
 
+# dotenv environment variable files
+.env
+.env.development.local
+.env.test.local
+.env.production.local
+.env.local
+
 # parcel-bundler cache (https://parceljs.org/)
 .cache
 .parcel-cache
 
 # Next.js build output
 .next
+out
 
 # Nuxt.js build / generate output
 .nuxt
 dist
 
-# Storybook build outputs
-.out
-.storybook-out
+# Gatsby files
+.cache/
 
-# Temporary folders
-tmp/
-temp/
+# vuepress build output
+.vuepress/dist
 
-# Test files
-test-results/
-playwright-report/
-playwright/.cache/
+# Serverless directories
+.serverless/
 
-# HAR files (if you want to exclude them)
-*.har
-.example_requests
+# FuseBox cache
+.fusebox/
+
+# DynamoDB Local files
+.dynamodb/
+
+# TernJS port file
+.tern-port
+
+# Stores VSCode versions used for testing VSCode extensions
+.vscode-test
+
+# yarn v2
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp.*
+
+# Custom ignore
+ts-node
+.example_requests/Active-order.har.har
+.example_requests/Bolt_login_order.har
+.example_requests/bolt_login_sms.har
+.example_requests/Directions-bolt.har.har
+.example_requests/Finalize-bolt.har.har
+.example_requests/Finish-order.har.har
+.example_requests/har_new_endpoints.md
+.example_requests/new_requests_bolt.md
+.example_requests/Pricing-bolt.har.har
+.example_requests/ProxyPin8-23_00_35_42.har
 .magic-link-token.json
-.bolt-token.json
-.kiro
+.example_requests/requests_bolt.md

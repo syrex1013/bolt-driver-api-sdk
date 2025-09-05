@@ -94,7 +94,7 @@ describe('Driver Endpoints Integration Tests', () => {
         mockClient.post.mockResolvedValueOnce(mockResponse);
 
         const result = await api.getScheduledRideRequests(testGpsInfo);
-        expect(result).toEqual({ code: 0, message: 'OK', data: { scheduledRides: [] } });
+        expect(result).toEqual({ scheduledRides: [] });
         expect(mockClient.post).toHaveBeenCalledWith(
           expect.stringContaining('getScheduledRideRequests'),
           {}, // Empty request body for POST
@@ -127,7 +127,7 @@ describe('Driver Endpoints Integration Tests', () => {
         mockClient.get.mockResolvedValueOnce(mockResponse);
 
         const result = await api.getEarningLandingScreen(testGpsInfo);
-        expect(result.code).toBe(0);
+        expect(result).toEqual({ earnings: { today: 0, week: 0 } });
         expect(mockClient.get).toHaveBeenCalledWith(
           expect.stringContaining('getEarningLandingScreen'),
           expect.objectContaining({
@@ -155,7 +155,7 @@ describe('Driver Endpoints Integration Tests', () => {
 
         const params = { ...testGpsInfo, group_by: 'all' };
         const result = await api.getActivityRides(params);
-        expect(result.code).toBe(0);
+        expect(result).toEqual({ rides: [] });
         expect(mockClient.get).toHaveBeenCalledWith(
           expect.stringContaining('getActivityRides'),
           expect.objectContaining({
@@ -183,7 +183,7 @@ describe('Driver Endpoints Integration Tests', () => {
 
         const params = { ...testGpsInfo, limit: 10, offset: 0 };
         const result = await api.getOrderHistoryPaginated(params);
-        expect(result.code).toBe(0);
+        expect(result).toEqual({ orders: [], totalCount: 0 });
         expect(mockClient.get).toHaveBeenCalledWith(
           expect.stringContaining('getOrderHistoryPaginated'),
           expect.objectContaining({
@@ -212,8 +212,7 @@ describe('Driver Endpoints Integration Tests', () => {
         mockClient.get.mockResolvedValueOnce(mockResponse);
 
         const result = await api.getHelpDetails(testGpsInfo);
-        expect(result.code).toBe(0);
-        expect(result.message).toBe('OK');
+        expect(result).toEqual({ helpTopics: [] });
       });
     });
 
@@ -229,8 +228,7 @@ describe('Driver Endpoints Integration Tests', () => {
         mockClient.get.mockResolvedValueOnce(mockResponse);
 
         const result = await api.getEarnMoreDetails(testGpsInfo);
-        expect(result.code).toBe(0);
-        expect(result.message).toBe('OK');
+        expect(result).toEqual({ opportunities: [] });
       });
     });
 
@@ -246,8 +244,7 @@ describe('Driver Endpoints Integration Tests', () => {
         mockClient.get.mockResolvedValueOnce(mockResponse);
 
         const result = await api.getScoreOverview(testGpsInfo);
-        expect(result.code).toBe(0);
-        expect(result.message).toBe('OK');
+        expect(result).toEqual({ rating: 4.5, score: 85 });
       });
     });
 
@@ -263,8 +260,7 @@ describe('Driver Endpoints Integration Tests', () => {
         mockClient.get.mockResolvedValueOnce(mockResponse);
 
         const result = await api.getDriverSidebar(testGpsInfo);
-        expect(result.code).toBe(0);
-        expect(result.message).toBe('OK');
+        expect(result).toEqual({ menuItems: [] });
       });
     });
   });
@@ -292,7 +288,7 @@ describe('Driver Endpoints Integration Tests', () => {
       mockClient.post.mockResolvedValueOnce(mockResponse);
 
       const result = await api.getScheduledRideRequests(testGpsInfo);
-      expect(result).toEqual({ code: 0, message: 'OK', data: {} });
+      expect(result).toEqual({});
     });
   });
 
@@ -309,7 +305,7 @@ describe('Driver Endpoints Integration Tests', () => {
       mockClient.post.mockResolvedValueOnce(mockResponse);
 
       const result = await api.getScheduledRideRequests(testGpsInfo);
-      expect(result).toEqual({ code: 0, message: 'OK', data: mockData });
+      expect(result).toEqual(mockData);
     });
 
     it('should handle non-zero response codes from API', async () => {

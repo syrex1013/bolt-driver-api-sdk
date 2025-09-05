@@ -212,7 +212,7 @@ describe('BoltDriverAPI Core Functionality', () => {
       const config = (boltAPI as any).config;
       
       expect(config.baseUrl).toBe('https://partnerdriver.live.boltsvc.net/partnerDriver');
-      expect(config.driverBaseUrl).toBe('https://partnerdriver.live.boltsvc.net');
+      expect(config.driverBaseUrl).toBe('https://partnerdriver.live.boltsvc.net/partnerDriver');
       expect(config.timeout).toBe(30000);
       expect(config.retries).toBe(3);
       expect(config.userAgent).toBe('Bolt Driver/179857746 CFNetwork/3826.600.31 Darwin/24.6.0');

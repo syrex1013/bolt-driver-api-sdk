@@ -258,9 +258,9 @@ describe('Authentication Integration and Token Persistence', () => {
 
                 const result = await boltAPI.getOtherActiveDrivers(mockGpsInfo);
         
-        expect(result).toEqual({ code: 0, message: 'OK', data: { list: [] } });
+        expect(result).toEqual({ list: [] });
         expect(mockAxiosInstance.get).toHaveBeenCalledWith(
-          'https://europe-company.taxify.eu/search/driver/getOtherActiveDrivers',
+          'https://node.bolt.eu/search/driver/getOtherActiveDrivers',
           expect.objectContaining({
             params: expect.objectContaining({
               brand: 'bolt',
@@ -286,7 +286,7 @@ describe('Authentication Integration and Token Persistence', () => {
 
         const result = await boltAPI.getModal(mockGpsInfo, 'home_screen');
         
-        expect(result).toEqual({ code: 0, message: 'OK', data: null });
+        expect(result).toEqual(null);
         expect(mockAxiosInstance.get).toHaveBeenCalledWith(
           expect.stringContaining('/modal'),
           expect.objectContaining({
@@ -299,26 +299,26 @@ describe('Authentication Integration and Token Persistence', () => {
     });
 
     describe('updatePushProfile', () => {
-      it('should update push profile by calling setDeviceToken', async () => {
+      it('should update push profile on Sinch API', async () => {
         const mockResponse = {
           data: {
-            code: 0,
-            message: 'OK'
+            status: 'success'
           }
         };
 
-        mockAxiosInstance.post.mockResolvedValueOnce(mockResponse);
+        mockAxiosInstance.put.mockResolvedValueOnce(mockResponse);
 
-        await boltAPI.updatePushProfile('device-token-789');
+        await boltAPI.updatePushProfile('user-123', 'instance-456', 'device-token-789');
 
-        expect(mockAxiosInstance.post).toHaveBeenCalledWith(
-          `${boltAPI['config'].driverBaseUrl}/partnerDriver/setDeviceToken`,
-          { device_token: 'device-token-789' },
+        expect(mockAxiosInstance.put).toHaveBeenCalledWith(
+          'https://ocra-bolt.api.sinch.com/ocra/v1/users/user-123/instances/instance-456/pushProfile',
           expect.objectContaining({
-            params: expect.objectContaining({
-              brand: 'bolt',
-              deviceId: mockDeviceInfo.deviceId
-            })
+            apn: expect.arrayContaining([
+              expect.objectContaining({
+                deviceToken: 'device-token-789',
+                environment: 'production'
+              })
+            ])
           })
         );
       });

@@ -23,6 +23,9 @@
     "test:magic-link": "ts-node examples/test-magic-link.ts",
     "examples:bolt-driver": "ts-node examples/bolt-driver-endpoints.ts",
     "examples:inspect": "ts-node examples/inspect-responses.ts",
+    "examples:navigation": "ts-node examples/ride-navigation.ts",
+    "test:examples": "ts-node examples/automated-test.ts",
+    "test:all": "npm run test && npm run test:examples",
     "prepare": "npm run build",
     "release": "npm version patch && npm publish"
   },
