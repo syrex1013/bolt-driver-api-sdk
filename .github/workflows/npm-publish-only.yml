@@ -1,0 +1,67 @@
+name: NPM Publish Only
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to publish (e.g., 1.0.2)'
+        required: true
+        default: '1.0.2'
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish-npm:
+    name: Publish to NPM
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js for NPM
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+        registry-url: 'https://registry.npmjs.org'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Run tests
+      run: npm test
+      
+    - name: Build package
+      run: npm run build
+      
+    - name: Run linting
+      run: npm run lint
+      
+    - name: Prepare package for NPM
+      run: |
+        # Create a copy of package.json for NPM with unscoped name
+        cp package.json package-npm.json
+        # Update the name to be unscoped for NPM
+        node -e "
+          const pkg = JSON.parse(require('fs').readFileSync('package-npm.json', 'utf8'));
+          pkg.name = 'bolt-driver-api';
+          delete pkg.publishConfig;
+          require('fs').writeFileSync('package-npm.json', JSON.stringify(pkg, null, 2));
+        "
+      
+    - name: Publish to NPM
+      run: npm publish package-npm.json
+      env:
+        NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        
+    - name: Verify NPM publication
+      run: |
+        echo "✅ Package published to NPM successfully!"
+        echo "Version: $(node -p "require('./package.json').version")"
+        echo "NPM URL: https://www.npmjs.com/package/bolt-driver-api"

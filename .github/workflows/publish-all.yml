@@ -45,8 +45,20 @@ jobs:
     - name: Run linting
       run: npm run lint
       
+    - name: Prepare package for NPM
+      run: |
+        # Create a copy of package.json for NPM with unscoped name
+        cp package.json package-npm.json
+        # Update the name to be unscoped for NPM
+        node -e "
+          const pkg = JSON.parse(require('fs').readFileSync('package-npm.json', 'utf8'));
+          pkg.name = 'bolt-driver-api';
+          delete pkg.publishConfig;
+          require('fs').writeFileSync('package-npm.json', JSON.stringify(pkg, null, 2));
+        "
+      
     - name: Publish to NPM
-      run: npm publish
+      run: npm publish --package-lock=false
       env:
         NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         
