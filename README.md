@@ -38,6 +38,8 @@ The Bolt Driver API SDK provides complete access to Bolt's driver platform, enab
 
 ## 📦 Installation
 
+### From NPM (Recommended)
+
 ```bash
 npm install bolt-driver-api
 ```
@@ -46,6 +48,18 @@ or using yarn:
 
 ```bash
 yarn add bolt-driver-api
+```
+
+### From GitHub Packages
+
+```bash
+npm install @syrex1013/bolt-driver-api
+```
+
+**Note:** For GitHub Packages, you may need to configure your `.npmrc` file:
+
+```bash
+echo "@syrex1013:registry=https://npm.pkg.github.com" >> ~/.npmrc
 ```
 
 ## 🎯 Quick Start

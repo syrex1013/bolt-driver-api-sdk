@@ -4,6 +4,9 @@
   "description": "Official Node.js SDK for Bolt Driver API - communicate with Bolt's driver platform like the mobile app",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watchAll",
