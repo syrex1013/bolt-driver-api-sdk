@@ -119,7 +119,8 @@ async function initializeAPI(): Promise<CLIState | null> {
       accuracyMeters: 19.791364,
       adjustedBearing: 0,
       bearingAccuracyDeg: 180,
-      speedAccuracyMps: 1.8
+      speedAccuracyMps: 1.8,
+      gps_speed_accuracy: 0
     };
 
     const spinner = ora('Initializing Bolt Driver API...').start();
@@ -213,7 +214,7 @@ async function performAuthentication(api: BoltDriverAPI, phoneNumber: string, us
     // Add SMS code to credentials before confirmation
     credentials.verification_code = smsCode;
 
-    const confirmResponse = await api.confirmAuthentication(authConfig, deviceInfo, credentials);
+    const confirmResponse = await api.confirmAuthentication(authConfig, deviceInfo, credentials, smsCode);
     spinner.succeed(chalk.green('Authentication successful'));
 
     console.log(boxen(
@@ -531,7 +532,8 @@ async function handleGPSUpdate(state: CLIState) {
     accuracyMeters: gpsInput.accuracy || 15,
     adjustedBearing: 0,
     bearingAccuracyDeg: 180,
-    speedAccuracyMps: 1.8
+    speedAccuracyMps: 1.8,
+    gps_speed_accuracy: 0
   };
 
   console.log(chalk.green('\n🌍 GPS information updated successfully'));

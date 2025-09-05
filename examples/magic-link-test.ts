@@ -96,6 +96,7 @@ async function magicLinkTest() {
       age: 30,
       bearingAccuracyDeg: 0,
       speedAccuracyMps: 1.8,
+      gps_speed_accuracy: 0
     };
 
     const authResponse = await boltAPI.authenticateWithMagicLink(token, deviceInfo, gpsInfo);
@@ -109,8 +110,8 @@ async function magicLinkTest() {
 
       // Check authentication state
       console.log('\n🔍 Authentication State:');
-      console.log(`   Access Token: ${boltAPI.getCurrentAccessToken() ? chalk.green('✅ Set') : chalk.red('❌ Not set')}`);
-      console.log(`   Refresh Token: ${boltAPI.getCurrentRefreshToken() ? chalk.green('✅ Set') : chalk.red('❌ Not set')}`);
+      console.log(`   Access Token: ${boltAPI.getAccessToken() ? chalk.green('✅ Set') : chalk.red('❌ Not set')}`);
+      console.log(`   Refresh Token: ${boltAPI.isAuthenticated() ? chalk.green('✅ Set') : chalk.red('❌ Not set')}`);
       console.log(`   Is Authenticated: ${boltAPI.isAuthenticated() ? chalk.green('✅ Yes') : chalk.red('❌ No')}`);
 
       // Step 3: Test various API endpoints and print responses

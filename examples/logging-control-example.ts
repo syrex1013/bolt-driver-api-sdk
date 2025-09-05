@@ -51,45 +51,43 @@ async function loggingControlExample() {
 
   // Show initial logging configuration
   console.log(chalk.cyan('📋 Initial Logging Configuration:'));
-  const initialConfig = boltAPI.getLoggingConfig();
-  console.log(`   ${chalk.gray('Requests:')} ${initialConfig.logRequests ? chalk.green('✅ Enabled') : chalk.red('❌ Disabled')}`);
-  console.log(`   ${chalk.gray('Responses:')} ${initialConfig.logResponses ? chalk.green('✅ Enabled') : chalk.red('❌ Disabled')}`);
-  console.log(`   ${chalk.gray('Errors:')} ${initialConfig.logErrors ? chalk.green('✅ Enabled') : chalk.red('❌ Disabled')}\n`);
+  console.log(`   ${chalk.gray('Requests:')} ${chalk.green('✅ Enabled')} (default)`);
+  console.log(`   ${chalk.gray('Responses:')} ${chalk.green('✅ Enabled')} (default)`);
+  console.log(`   ${chalk.gray('Errors:')} ${chalk.green('✅ Enabled')} (default)\n`);
 
   // Demonstrate different logging control scenarios
   console.log(chalk.yellow('🔧 Logging Control Scenarios:\n'));
 
   // Scenario 1: Disable all request/response logging
   console.log(chalk.blue('1️⃣ Disabling all request/response logging:'));
-  boltAPI.setRequestLogging(false);
+  boltAPI.updateLoggingConfig({ logRequests: false, logResponses: false });
   console.log('   → Made API call with logging disabled\n');
 
   // Scenario 2: Enable only request logging
   console.log(chalk.blue('2️⃣ Enabling only request logging:'));
-  boltAPI.setRequestLogging(true, { logRequests: true, logResponses: false });
+  boltAPI.updateLoggingConfig({ logRequests: true, logResponses: false });
   console.log('   → Made API call with only request logging\n');
 
   // Scenario 3: Enable both request and response logging
   console.log(chalk.blue('3️⃣ Enabling both request and response logging:'));
-  boltAPI.setRequestLogging(true, { logRequests: true, logResponses: true });
+  boltAPI.updateLoggingConfig({ logRequests: true, logResponses: true });
   console.log('   → Made API call with full logging\n');
 
   // Scenario 4: Custom configuration - only response logging
   console.log(chalk.blue('4️⃣ Custom configuration - only response logging:'));
-  boltAPI.setRequestLogging(true, { logRequests: false, logResponses: true });
+  boltAPI.updateLoggingConfig({ logRequests: false, logResponses: true });
   console.log('   → Made API call with only response logging\n');
 
   // Scenario 5: Disable all logging except errors
   console.log(chalk.blue('5️⃣ Disabling all logging except errors:'));
-  boltAPI.setRequestLogging(false, { logErrors: true });
+  boltAPI.updateLoggingConfig({ logRequests: false, logResponses: false, logErrors: true });
   console.log('   → Made API call with minimal logging\n');
 
   // Show final logging configuration
   console.log(chalk.cyan('📋 Final Logging Configuration:'));
-  const finalConfig = boltAPI.getLoggingConfig();
-  console.log(`   ${chalk.gray('Requests:')} ${finalConfig.logRequests ? chalk.green('✅ Enabled') : chalk.red('❌ Disabled')}`);
-  console.log(`   ${chalk.gray('Responses:')} ${finalConfig.logResponses ? chalk.green('✅ Enabled') : chalk.red('❌ Disabled')}`);
-  console.log(`   ${chalk.gray('Errors:')} ${finalConfig.logErrors ? chalk.green('✅ Enabled') : chalk.red('❌ Disabled')}\n`);
+  console.log(`   ${chalk.gray('Requests:')} ${chalk.red('❌ Disabled')}`);
+  console.log(`   ${chalk.gray('Responses:')} ${chalk.red('❌ Disabled')}`);
+  console.log(`   ${chalk.gray('Errors:')} ${chalk.green('✅ Enabled')}\n`);
 
   // Demonstrate the difference with a real API call
   console.log(chalk.yellow('🌐 Testing API Call with Current Logging Configuration:\n'));
@@ -107,7 +105,8 @@ async function loggingControlExample() {
       bearing: 0,
       adjustedBearing: 0,
       bearingAccuracyDeg: 0,
-      speedAccuracyMps: 1.8
+      speedAccuracyMps: 1.8,
+      gps_speed_accuracy: 0
     };
 
     // Try to get driver state (this will fail without authentication, but shows logging)

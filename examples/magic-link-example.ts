@@ -155,8 +155,8 @@ async function performMagicLinkAuthentication(boltAPI: BoltDriverAPI, email: str
       
       // Debug: Check authentication state
       console.log(chalk.blue('🔍 Checking authentication state...'));
-      console.log(chalk.gray(`Access Token: ${boltAPI.getCurrentAccessToken() ? 'Set' : 'Not set'}`));
-      console.log(chalk.gray(`Refresh Token: ${boltAPI.getCurrentRefreshToken() ? 'Set' : 'Not set'}`));
+      console.log(chalk.gray(`Access Token: ${boltAPI.getAccessToken() ? 'Set' : 'Not set'}`));
+      console.log(chalk.gray(`Refresh Token: ${boltAPI.isAuthenticated() ? 'Set' : 'Not set'}`));
       console.log(chalk.gray(`Is Authenticated: ${boltAPI.isAuthenticated() ? 'Yes' : 'No'}`));
       
       // Now we can make authenticated API calls
@@ -277,7 +277,8 @@ async function performPhoneAuthentication(boltAPI: BoltDriverAPI, deviceInfo: De
         session_id: 'test_session_id',
         phone: phoneNumber,
         verification_code: smsCode
-      }
+      },
+      smsCode
     );
 
     spinner.succeed('SMS code verified successfully!');
@@ -288,8 +289,8 @@ async function performPhoneAuthentication(boltAPI: BoltDriverAPI, deviceInfo: De
       
       // Debug: Check authentication state
       console.log(chalk.blue('🔍 Checking authentication state...'));
-      console.log(chalk.gray(`Access Token: ${boltAPI.getCurrentAccessToken() ? 'Set' : 'Not set'}`));
-      console.log(chalk.gray(`Refresh Token: ${boltAPI.getCurrentRefreshToken() ? 'Set' : 'Not set'}`));
+      console.log(chalk.gray(`Access Token: ${boltAPI.getAccessToken() ? 'Set' : 'Not set'}`));
+      console.log(chalk.gray(`Refresh Token: ${boltAPI.isAuthenticated() ? 'Set' : 'Not set'}`));
       console.log(chalk.gray(`Is Authenticated: ${boltAPI.isAuthenticated() ? 'Yes' : 'No'}`));
       
       // Now we can make authenticated API calls
@@ -538,7 +539,8 @@ function createSampleGpsInfo(): GpsInfo {
     accuracyMeters: 13.821502,
     adjustedBearing: 0,
     bearingAccuracyDeg: 180,
-    speedAccuracyMps: 1.808204567744442
+    speedAccuracyMps: 1.808204567744442,
+    gps_speed_accuracy: 0
   };
 }
 

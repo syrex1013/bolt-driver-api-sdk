@@ -18,7 +18,7 @@ import { BoltDriverAPI } from "../src";
 import { GpsInfo, OrderHandle, OrderHistoryItem } from "../src/types";
 import chalk from "chalk";
 import ora from "ora";
-import prompts from "prompts";
+import * as prompts from "prompts";
 
 /**
  * Navigation example class

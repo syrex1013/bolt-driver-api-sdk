@@ -4,7 +4,7 @@ import { BoltDriverAPI, FileTokenStorage } from "../src";
 import { GpsInfo } from "../src/types";
 import * as dotenv from "dotenv";
 import chalk from "chalk";
-import util from "util";
+import * as util from "util";
 
 // Load environment variables
 dotenv.config();
