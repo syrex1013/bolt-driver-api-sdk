@@ -59,7 +59,7 @@ The CI/CD pipeline includes:
 
 ### 3. Codecov Setup (Optional)
 
-1. Go to [Codecov](https://codecov.io)
+1. Go to [Codecov](https://cotdecov.io)
 2. Sign in with GitHub
 3. Add your repository
 4. The CI pipeline will automatically upload coverage reports

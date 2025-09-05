@@ -88,7 +88,7 @@ export class Logger {
    * @param data - Additional data to log
    * @private
    */
-  private log(level: string, message: string, data?: any): void {
+  private log(level: string, message: string, data?: unknown): void {
     if (this.shouldLog(level)) {
       this.consoleLog(level, message, data);
     }
@@ -99,7 +99,7 @@ export class Logger {
    * @param message - Message to log
    * @param data - Additional data to log
    */
-  debug(message: string, data?: any): void {
+  debug(message: string, data?: unknown): void {
     this.log('debug', message, data);
   }
 
@@ -108,7 +108,7 @@ export class Logger {
    * @param message - Message to log
    * @param data - Additional data to log
    */
-  info(message: string, data?: any): void {
+  info(message: string, data?: unknown): void {
     this.log('info', message, data);
   }
 
@@ -117,7 +117,7 @@ export class Logger {
    * @param message - Message to log
    * @param data - Additional data to log
    */
-  warn(message: string, data?: any): void {
+  warn(message: string, data?: unknown): void {
     this.log('warn', message, data);
   }
 
@@ -126,7 +126,7 @@ export class Logger {
    * @param message - Message to log
    * @param data - Additional data to log
    */
-  error(message: string, data?: any): void {
+  error(message: string, data?: unknown): void {
     this.log('error', message, data);
   }
 
@@ -136,7 +136,7 @@ export class Logger {
    * @param url - Request URL
    * @param data - Request data
    */
-  logRequest(method: string, url: string, data?: any): void {
+  logRequest(method: string, url: string, data?: unknown): void {
     if (this.config.logRequests && this.config.enabled) {
       const entry: LogEntry = {
         timestamp: new Date().toISOString(),
@@ -158,7 +158,7 @@ export class Logger {
    * @param data - Response data
    * @param duration - Request duration in milliseconds
    */
-  logResponse(method: string, url: string, data?: any, duration?: number): void {
+  logResponse(method: string, url: string, data?: unknown, duration?: number): void {
     if (this.config.logResponses && this.config.enabled) {
       const entry: LogEntry = {
         timestamp: new Date().toISOString(),
@@ -182,7 +182,7 @@ export class Logger {
    * @param error - Error details
    * @param duration - Request duration in milliseconds
    */
-  logError(method: string, url: string, error: any, duration?: number): void {
+  logError(method: string, url: string, error: unknown, duration?: number): void {
     if (this.config.logErrors && this.config.enabled) {
       const entry: LogEntry = {
         timestamp: new Date().toISOString(),
@@ -238,7 +238,7 @@ export class Logger {
    * @param data - Additional data
    * @private
    */
-  private consoleLog(level: string, message: string, data?: any): void {
+  private consoleLog(level: string, message: string, data?: unknown): void {
     const timestamp = new Date().toISOString();
     const prefix = `[${timestamp}] [${level.toUpperCase()}]`;
     
@@ -258,7 +258,9 @@ export class Logger {
 
     try {
       const logs = this.logBuffer.map(entry => JSON.stringify(entry)).join('\n') + '\n';
-      await fs.appendFile(this.config.logFilePath!, logs, 'utf8');
+      if (this.config.logFilePath) {
+        await fs.appendFile(this.config.logFilePath, logs, 'utf8');
+      }
       this.logBuffer = [];
     } catch (error) {
       console.error('Failed to write logs to file:', error);
