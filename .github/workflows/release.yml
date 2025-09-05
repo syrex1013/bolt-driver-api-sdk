@@ -1,24 +1,17 @@
-name: Release
+name: GitHub Release
 
 on:
   push:
     tags:
       - 'v*'
   workflow_dispatch:
-    inputs:
-      version:
-        description: 'Version to release (e.g., 1.0.0)'
-        required: true
-        type: string
 
 permissions:
   contents: write
-  pull-requests: write
-  issues: write
 
 jobs:
-  release:
-    name: Create Release
+  create-release:
+    name: Create GitHub Release
     runs-on: ubuntu-latest
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     
@@ -28,39 +21,24 @@ jobs:
       with:
         fetch-depth: 0
         
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '20.x'
-        cache: 'npm'
-        
-    - name: Install dependencies
-      run: npm ci
-      
-    - name: Build package
-      run: npm run build
-      
-    - name: Run tests
-      run: npm test
-      
     - name: Generate changelog
       id: changelog
       run: |
         if [ -f CHANGELOG.md ]; then
-          # Extract changelog for this version
-          VERSION=${GITHUB_REF#refs/tags/v}
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            VERSION=${{ github.event.inputs.version }}
-          fi
+          # Extract changelog for current version
+          VERSION=${{ github.ref_name }}
+          echo "Extracting changelog for version $VERSION"
           
-          # Extract changelog section for this version
-          CHANGELOG=$(awk "/^## \[$VERSION\]/{flag=1;next}/^## \[/{flag=0}flag" CHANGELOG.md)
-          if [ -z "$CHANGELOG" ]; then
-            CHANGELOG="Release $VERSION - See CHANGELOG.md for details"
+          # Try to extract changelog section for this version
+          if grep -q "## \[$VERSION\]" CHANGELOG.md; then
+            # Extract from ## [version] to next ## or end of file
+            sed -n "/## \[$VERSION\]/,/## \[/p" CHANGELOG.md | sed '$d' > changelog_section.txt
+            echo "changelog<<EOF" >> $GITHUB_OUTPUT
+            cat changelog_section.txt >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+          else
+            echo "changelog=Release $VERSION" >> $GITHUB_OUTPUT
           fi
-          echo "changelog<<EOF" >> $GITHUB_OUTPUT
-          echo "$CHANGELOG" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
         else
           echo "changelog=Release $VERSION" >> $GITHUB_OUTPUT
         fi
@@ -73,49 +51,5 @@ jobs:
         body: ${{ steps.changelog.outputs.changelog }}
         draft: false
         prerelease: false
-        files: |
-          dist/**/*
+        generate_release_notes: true
         token: ${{ secrets.GITHUB_TOKEN }}
-
-  publish-npm:
-    name: Publish to NPM
-    runs-on: ubuntu-latest
-    needs: release
-    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '20.x'
-        cache: 'npm'
-        registry-url: 'https://registry.npmjs.org'
-        
-    - name: Install dependencies
-      run: npm ci
-      
-    - name: Build package
-      run: npm run build
-      
-    - name: Publish to NPM
-      run: npm publish
-      env:
-        NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        
-    - name: Verify publication
-      run: |
-        sleep 10
-        VERSION=${GITHUB_REF#refs/tags/v}
-        if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-          VERSION=${{ github.event.inputs.version }}
-        fi
-        npm view bolt-driver-api@$VERSION
-        
-    - name: Notify success
-      run: |
-        echo "✅ Successfully published bolt-driver-api@$VERSION to NPM"
-        echo "📦 Package: https://www.npmjs.com/package/bolt-driver-api"
-        echo "🏷️  Version: $VERSION"
