@@ -20,19 +20,19 @@ Initiates SMS-based authentication for a driver.
 
 ```typescript
 startAuthentication(
-  deviceParams: DeviceInfo,
   authConfig: AuthConfig,
+  deviceInfo: DeviceInfo,
   credentials: Credentials
 ): Promise<StartAuthResponse>
 ```
 
 **Parameters:**
 
-- `deviceParams`: Device information (ID, type, OS, app version)
-- `authConfig`: Authentication settings (country, language, brand)
+- `authConfig`: Authentication settings (country, language, brand, theme)
+- `deviceInfo`: Device information (ID, type, OS, app version)
 - `credentials`: Driver credentials (phone, driver_id, session_id)
 
-**Returns:** `StartAuthResponse` with session ID for confirmation
+**Returns:** `StartAuthResponse` with verification token for confirmation
 
 **Throws:**
 
@@ -46,14 +46,18 @@ Confirms authentication with SMS verification code.
 
 ```typescript
 confirmAuthentication(
-  sessionId: string,
+  authConfig: AuthConfig,
+  deviceInfo: DeviceInfo,
+  credentials: Credentials,
   smsCode: string
 ): Promise<ConfirmAuthResponse>
 ```
 
 **Parameters:**
 
-- `sessionId`: Session ID from startAuthentication
+- `authConfig`: Authentication settings
+- `deviceInfo`: Device information
+- `credentials`: Driver credentials including verification_token
 - `smsCode`: SMS verification code
 
 **Returns:** `ConfirmAuthResponse` with authentication tokens
@@ -83,15 +87,33 @@ Completes authentication using magic link.
 
 ```typescript
 authenticateWithMagicLink(
-  magicLinkUrl: string
+  token: string,
+  deviceInfo: DeviceInfo,
+  gpsInfo: GpsInfo
 ): Promise<MagicLinkVerificationResponse>
 ```
 
 **Parameters:**
 
-- `magicLinkUrl`: Full magic link URL from email
+- `token`: Extracted token from magic link URL
+- `deviceInfo`: Device information
+- `gpsInfo`: GPS location information
 
 **Returns:** `MagicLinkVerificationResponse` with driver information
+
+### extractTokenFromMagicLink
+
+Static method to extract token from magic link URL.
+
+```typescript
+static extractTokenFromMagicLink(url: string): string
+```
+
+**Parameters:**
+
+- `url`: Full magic link URL from email
+
+**Returns:** Extracted authentication token
 
 ## Driver State Methods
 
@@ -479,12 +501,12 @@ getCurrentRefreshToken(): string | undefined
 
 **Returns:** Current refresh token or undefined
 
-### setLoggingConfig
+### updateLoggingConfig
 
 Updates logging configuration.
 
 ```typescript
-setLoggingConfig(config: Partial<LoggingConfig>): void
+updateLoggingConfig(config: Partial<LoggingConfig>): void
 ```
 
 **Parameters:**
@@ -500,6 +522,16 @@ getLogger(): Logger
 ```
 
 **Returns:** Logger instance for custom logging
+
+### getDriverInfo
+
+Gets driver information from JWT token.
+
+```typescript
+getDriverInfo(): { driverId: number; partnerId: number; companyId: number; companyCityId: number } | undefined
+```
+
+**Returns:** Driver information or undefined if not authenticated
 
 ## Error Handling
 

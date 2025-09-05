@@ -7,6 +7,7 @@
 ![License](https://img.shields.io/npm/l/bolt-driver-api?style=for-the-badge)
 ![Build Status](https://img.shields.io/github/actions/workflow/status/bolt-driver-api/bolt-driver-api-sdk/test.yml?style=for-the-badge)
 ![Coverage](https://img.shields.io/codecov/c/github/bolt-driver-api/bolt-driver-api-sdk?style=for-the-badge)
+![TypeScript](https://img.shields.io/badge/TypeScript-Ready-blue?style=for-the-badge&logo=typescript)
 
 ## The official Node.js SDK for integrating with Bolt's driver platform API
 
@@ -52,28 +53,33 @@ yarn add bolt-driver-api
 ### Basic Usage
 
 ```typescript
-import { BoltDriverAPI } from 'bolt-driver-api';
+import { BoltDriverAPI, DeviceInfo, AuthConfig, GpsInfo } from 'bolt-driver-api';
+
+// Device information
+const deviceInfo: DeviceInfo = {
+  deviceId: '550e8400-e29b-41d4-a716-446655440000',
+  deviceType: 'iphone',
+  deviceName: 'iPhone17,3',
+  deviceOsVersion: 'iOS18.6',
+  appVersion: 'DI.116.0'
+};
+
+// Authentication configuration
+const authConfig: AuthConfig = {
+  authMethod: 'phone',
+  brand: 'bolt',
+  country: 'pl',
+  language: 'en-GB',
+  theme: 'dark'
+};
 
 // Initialize the API client
-const api = new BoltDriverAPI(
-  {
-    deviceId: 'unique-device-id',
-    deviceType: 'iphone',
-    deviceName: 'iPhone 15 Pro',
-    deviceOsVersion: 'iOS 17.0',
-    appVersion: 'DI.116.0'
-  },
-  {
-    country: 'pl',
-    language: 'en-GB',
-    brand: 'bolt'
-  }
-);
+const api = new BoltDriverAPI(deviceInfo, authConfig);
 
 // Start authentication
 const authResponse = await api.startAuthentication(
-  deviceInfo,
   authConfig,
+  deviceInfo,
   {
     phone: '+48123456789',
     driver_id: 'driver_123',
@@ -82,14 +88,36 @@ const authResponse = await api.startAuthentication(
 );
 
 // Confirm with SMS code
-await api.confirmAuthentication(authResponse.sessionId, '1234');
+await api.confirmAuthentication(
+  authConfig,
+  deviceInfo,
+  {
+    phone: '+48123456789',
+    driver_id: 'driver_123',
+    session_id: 'session_123',
+    verification_token: authResponse.data?.verification_token,
+    verification_code: '123456'
+  },
+  '123456'
+);
 
 // Now you can use all API methods
-const driverState = await api.getDriverState({
+const gpsInfo: GpsInfo = {
   latitude: 52.237049,
   longitude: 21.017532,
-  accuracy: 10
-});
+  accuracy: 10,
+  bearing: 0,
+  speed: 0,
+  timestamp: Math.floor(Date.now() / 1000),
+  age: 0,
+  accuracyMeters: 10,
+  adjustedBearing: 0,
+  bearingAccuracyDeg: 0,
+  speedAccuracyMps: 0,
+  gps_speed_accuracy: 0
+};
+
+const driverState = await api.getDriverState(gpsInfo);
 ```
 
 ### Magic Link Authentication (Alternative)
@@ -97,15 +125,33 @@ const driverState = await api.getDriverState({
 ```typescript
 // When SMS limit is reached, use magic link
 try {
-  await api.startAuthentication(...);
+  await api.startAuthentication(authConfig, deviceInfo, credentials);
 } catch (error) {
   if (error.code === 299) { // SMS_LIMIT_REACHED
     // Send magic link to email
     await api.sendMagicLink('driver@example.com');
     
     // After receiving the magic link email
-    const magicLink = 'https://partners.bolt.eu/...';
-    await api.authenticateWithMagicLink(magicLink);
+    const magicLinkUrl = 'https://partners.bolt.eu/...';
+    const token = BoltDriverAPI.extractTokenFromMagicLink(magicLinkUrl);
+    
+    // Authenticate with magic link
+    const gpsInfo: GpsInfo = {
+      latitude: 52.237049,
+      longitude: 21.017532,
+      accuracy: 10,
+      bearing: 0,
+      speed: 0,
+      timestamp: Math.floor(Date.now() / 1000),
+      age: 0,
+      accuracyMeters: 10,
+      adjustedBearing: 0,
+      bearingAccuracyDeg: 0,
+      speedAccuracyMps: 0,
+      gps_speed_accuracy: 0
+    };
+    
+    await api.authenticateWithMagicLink(token, deviceInfo, gpsInfo);
   }
 }
 ```
@@ -120,14 +166,23 @@ The SDK supports two authentication methods:
 
 ```typescript
 // Start SMS authentication
-const { sessionId } = await api.startAuthentication(
-  deviceInfo,
+const authResponse = await api.startAuthentication(
   authConfig,
+  deviceInfo,
   credentials
 );
 
 // Confirm with SMS code
-await api.confirmAuthentication(sessionId, smsCode);
+await api.confirmAuthentication(
+  authConfig,
+  deviceInfo,
+  {
+    ...credentials,
+    verification_token: authResponse.data?.verification_token,
+    verification_code: smsCode
+  },
+  smsCode
+);
 ```
 
 #### 2. Magic Link Authentication
@@ -136,8 +191,11 @@ await api.confirmAuthentication(sessionId, smsCode);
 // Send magic link
 await api.sendMagicLink(email);
 
+// Extract token from magic link URL
+const token = BoltDriverAPI.extractTokenFromMagicLink(magicLinkUrl);
+
 // Authenticate with received link
-await api.authenticateWithMagicLink(magicLinkUrl);
+await api.authenticateWithMagicLink(token, deviceInfo, gpsInfo);
 ```
 
 ### Driver State Management
@@ -149,14 +207,19 @@ console.log(`Status: ${state.driver_status}`); // 'online', 'offline', 'busy'
 console.log(`Active order: ${state.active_order_handle}`);
 
 // Update driver location
-const gpsInfo = {
+const gpsInfo: GpsInfo = {
   latitude: 52.237049,
   longitude: 21.017532,
   accuracy: 10,
+  bearing: 0,
   speed: 0,
-  heading: 0,
-  altitude: 100,
-  timestamp: Date.now()
+  timestamp: Math.floor(Date.now() / 1000),
+  age: 0,
+  accuracyMeters: 10,
+  adjustedBearing: 0,
+  bearingAccuracyDeg: 0,
+  speedAccuracyMps: 0,
+  gps_speed_accuracy: 0
 };
 
 // Poll for updates based on state.next_polling_in_sec
@@ -172,20 +235,21 @@ setInterval(async () => {
 // Get scheduled rides
 const scheduledRides = await api.getScheduledRideRequests(
   gpsInfo,
-  ScheduledRideRequestGroupBy.Upcoming
+  'upcoming' // or 'accepted'
 );
 
 // Get ride history
 const history = await api.getOrderHistory(gpsInfo, 10, 0);
 
 // Get ride details
+const orderHandle = { order_handle: 'order_123' };
 const rideDetails = await api.getRideDetails(gpsInfo, orderHandle);
 
 // Track active ride
 if (state.active_order_handle) {
   const activeRide = await api.getRideDetails(
     gpsInfo,
-    state.active_order_handle
+    { order_handle: state.active_order_handle }
   );
 }
 ```
@@ -202,7 +266,7 @@ const breakdown = await api.getEarningsBreakdown(gpsInfo);
 // Get weekly/monthly charts
 const weeklyChart = await api.getEarningsChart(
   gpsInfo,
-  EarningsChartType.Weekly
+  'weekly' // or 'monthly'
 );
 
 // Get cash out options
@@ -268,6 +332,12 @@ npm run examples:magic-link
 
 # Bolt driver endpoints showcase
 npm run examples:bolt-driver
+
+# Response inspection tool
+npm run examples:inspect
+
+# Logging control example
+npm run examples:logging
 ```
 
 ### Automated Testing
@@ -298,9 +368,11 @@ const deviceInfo: DeviceInfo = {
 
 ```typescript
 const authConfig: AuthConfig = {
+  authMethod: 'phone',    // Authentication method
+  brand: 'bolt',          // Always 'bolt'
   country: 'pl',          // ISO country code
   language: 'en-GB',      // Language-region code
-  brand: 'bolt'           // Always 'bolt'
+  theme: 'dark'           // UI theme preference
 };
 ```
 
@@ -316,9 +388,17 @@ const api = new BoltDriverAPI(
     level: 'info',           // 'debug' | 'info' | 'warn' | 'error'
     logRequests: true,       // Log outgoing requests
     logResponses: true,      // Log incoming responses
+    logErrors: true,         // Log errors
     maskSensitiveData: true  // Mask sensitive information
   }
 );
+
+// Or update logging config after initialization
+api.updateLoggingConfig({
+  logRequests: false,
+  logResponses: false,
+  logErrors: true
+});
 ```
 
 ### Custom Token Storage
@@ -367,10 +447,11 @@ class BoltDriverAPI {
   );
   
   // Authentication methods
-  startAuthentication(...): Promise<StartAuthResponse>
-  confirmAuthentication(...): Promise<ConfirmAuthResponse>
+  startAuthentication(authConfig: AuthConfig, deviceInfo: DeviceInfo, credentials: Credentials): Promise<StartAuthResponse>
+  confirmAuthentication(authConfig: AuthConfig, deviceInfo: DeviceInfo, credentials: Credentials, smsCode: string): Promise<ConfirmAuthResponse>
   sendMagicLink(email: string): Promise<MagicLinkResponse>
-  authenticateWithMagicLink(url: string): Promise<MagicLinkVerificationResponse>
+  authenticateWithMagicLink(token: string, deviceInfo: DeviceInfo, gpsInfo: GpsInfo): Promise<MagicLinkVerificationResponse>
+  static extractTokenFromMagicLink(url: string): string
   
   // Driver state methods
   getDriverState(gpsInfo: GpsInfo): Promise<DriverState>
