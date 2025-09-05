@@ -66,6 +66,7 @@ try {
 ### When to Use Magic Link
 
 Magic link authentication is recommended when:
+
 - SMS limit has been reached (error code 299)
 - Phone number verification is unavailable
 - User prefers email authentication

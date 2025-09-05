@@ -11,17 +11,18 @@ dotenv.config();
 
 function createSampleGpsInfo(): GpsInfo {
   return {
-    latitude: 51.233234,
-    longitude: 22.518391,
-    accuracy: 15,
-    accuracyMeters: 15,
-    speed: 0,
+    latitude: 51.23325,
+    longitude: 22.518497,
+    accuracy: 17.331588,
+    bearing: 337.379444,
+    speed: 0.235321,
     timestamp: Math.floor(Date.now() / 1000),
-    age: 30,
-    bearing: 0,
+    age: 26.03,
+    accuracyMeters: 13.821502,
     adjustedBearing: 0,
-    bearingAccuracyDeg: 0,
-    speedAccuracyMps: 1.8,
+    bearingAccuracyDeg: 180,
+    speedAccuracyMps: 1.808204567744442,
+    gps_speed_accuracy: 1, // Added missing property
   };
 }
 

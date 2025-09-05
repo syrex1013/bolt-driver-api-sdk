@@ -24,7 +24,7 @@ function logSection(title: string) {
 }
 
 // Utility function for logging errors
-function logError(message: string, error?: any) {
+function logError(message: string, error?: unknown) {
   const errorString = error ? `\n\n${error.toString()}` : "";
   console.error(
     boxen(`${chalk.bold.red(message)}${errorString}`, {
@@ -50,6 +50,7 @@ function createSampleGpsInfo(): GpsInfo {
     adjustedBearing: 0,
     bearingAccuracyDeg: 180,
     speedAccuracyMps: 1.808204567744442,
+    gps_speed_accuracy: 1,
   };
 }
 
@@ -131,34 +132,41 @@ export async function runBoltDriverExample(existingApi?: BoltDriverAPI) {
   for (const endpoint of endpointDemos) {
     try {
       console.log(chalk.cyan(`\n🔹 Fetching: ${endpoint.name}...`));
-      const result = await (api as any)[endpoint.method](...endpoint.args);
+      const result = await (api as unknown as Record<string, (...args: unknown[]) => Promise<unknown>>)[endpoint.method](...endpoint.args);
 
       // Handle different response structures
       if (result) {
+        const resultObj = result as Record<string, unknown>;
+        
         // Check if it's an ApiResponse wrapper
-        if (result.code !== undefined) {
-          if (result.code === 0) {
+        if ('code' in resultObj && resultObj.code !== undefined) {
+          if (resultObj.code === 0) {
             console.log(chalk.green("✓ Success"));
             
             // Display useful information based on the endpoint
-            if (endpoint.method === "getLoggedInDriverConfiguration" && result.data?.driver_info) {
-              const driver = result.data.driver_info;
+            const data = resultObj.data as Record<string, unknown> | undefined;
+            if (endpoint.method === "getLoggedInDriverConfiguration" && data?.driver_info) {
+              const driver = data.driver_info as Record<string, unknown>;
               console.log(chalk.gray(`   Driver: ${driver.first_name || 'N/A'} ${driver.last_name || 'N/A'}`));
-              console.log(chalk.gray(`   Vehicle: ${result.data.vehicle_info?.make || 'N/A'} ${result.data.vehicle_info?.model || 'N/A'}`));
-            } else if (endpoint.method === "getScheduledRideRequests" && result.data?.scheduled_requests) {
-              console.log(chalk.gray(`   Scheduled rides: ${result.data.scheduled_requests.length}`));
-            } else if (endpoint.method === "getEarningLandingScreen" && result.data) {
-              console.log(chalk.gray(`   Today's earnings: ${result.data.today_earnings || '0'}`));
-            } else if (endpoint.method === "getActivityRides" && result.data?.activity_rides) {
-              console.log(chalk.gray(`   Activity rides: ${result.data.activity_rides.length}`));
-            } else if (endpoint.method === "getOrderHistoryPaginated" && result.data?.orders) {
-              console.log(chalk.gray(`   Order history: ${result.data.orders.length} orders`));
-            } else if (endpoint.method === "getHelpDetails" && result.data) {
-              console.log(chalk.gray(`   Help sections: ${Object.keys(result.data).length}`));
+              const vehicleInfo = data.vehicle_info as Record<string, unknown> | undefined;
+              console.log(chalk.gray(`   Vehicle: ${vehicleInfo?.make || 'N/A'} ${vehicleInfo?.model || 'N/A'}`));
+            } else if (endpoint.method === "getScheduledRideRequests" && data?.scheduled_requests) {
+              const scheduledRequests = data.scheduled_requests as unknown[];
+              console.log(chalk.gray(`   Scheduled rides: ${scheduledRequests.length}`));
+            } else if (endpoint.method === "getEarningLandingScreen" && data) {
+              console.log(chalk.gray(`   Today's earnings: ${(data as Record<string, unknown>).today_earnings || '0'}`));
+            } else if (endpoint.method === "getActivityRides" && data?.activity_rides) {
+              const activityRides = data.activity_rides as unknown[];
+              console.log(chalk.gray(`   Activity rides: ${activityRides.length}`));
+            } else if (endpoint.method === "getOrderHistoryPaginated" && data?.orders) {
+              const orders = data.orders as unknown[];
+              console.log(chalk.gray(`   Order history: ${orders.length} orders`));
+            } else if (endpoint.method === "getHelpDetails" && data) {
+              console.log(chalk.gray(`   Help sections: ${Object.keys(data).length}`));
             }
           } else {
             console.log(
-              chalk.yellow(`⚠ Non-zero response code: ${result.code} - ${result.message || 'Unknown error'}`)
+              chalk.yellow(`⚠ Non-zero response code: ${resultObj.code} - ${(resultObj as Record<string, unknown>).message || 'Unknown error'}`)
             );
           }
         } else {
@@ -167,10 +175,11 @@ export async function runBoltDriverExample(existingApi?: BoltDriverAPI) {
           
           // Display specific information for known direct response endpoints
           if (endpoint.method === "getLoggedInDriverConfiguration") {
-            if (result.driver_info) {
-              const driver = result.driver_info;
+            if ('driver_info' in resultObj) {
+              const driver = resultObj.driver_info as Record<string, unknown>;
               console.log(chalk.gray(`   Driver: ${driver.first_name || 'N/A'} ${driver.last_name || 'N/A'}`));
-              console.log(chalk.gray(`   Vehicle: ${result.vehicle_info?.make || 'N/A'} ${result.vehicle_info?.model || 'N/A'}`));
+              const vehicleInfo = resultObj.vehicle_info as Record<string, unknown> | undefined;
+              console.log(chalk.gray(`   Vehicle: ${vehicleInfo?.make || 'N/A'} ${vehicleInfo?.model || 'N/A'}`));
               console.log(chalk.gray(`   Phone: ${driver.phone || 'N/A'}`));
             }
           } else {
@@ -179,7 +188,7 @@ export async function runBoltDriverExample(existingApi?: BoltDriverAPI) {
               console.log(chalk.cyan('   📊 Full Response Data:'));
               console.log(chalk.gray('   ┌─────────────────────────────────────────────────────────────────'));
               
-              const displayFullValue = (value: any, indent: string = '   │ ', prefix: string = '', isLast: boolean = false): void => {
+              const displayFullValue = (value: unknown, indent: string = '   │ ', prefix: string = '', isLast: boolean = false): void => {
                 const connector = isLast ? '└─' : '├─';
                 const nextIndent = isLast ? indent + '   ' : indent + '│  ';
                 
@@ -234,14 +243,18 @@ export async function runBoltDriverExample(existingApi?: BoltDriverAPI) {
       } else {
         console.log(chalk.yellow("⚠ No response data received"));
       }
-    } catch (error: any) {
-      if (error.message?.includes("NOT_AUTHORIZED") || error.statusCode === 401) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorStatus = (error as { statusCode?: number }).statusCode;
+      
+      if (errorMessage.includes("NOT_AUTHORIZED") || errorStatus === 401) {
         console.log(chalk.yellow("⚠ Token expired or invalid (NOT_AUTHORIZED)"));
         console.log(chalk.gray("   This is normal - token may have expired"));
       } else {
-        console.log(chalk.red(`❌ Error: ${error.message || error}`));
-        if (error.response?.data) {
-          console.log(chalk.gray(`   Response: ${JSON.stringify(error.response.data).substring(0, 100)}...`));
+        console.log(chalk.red(`❌ Error: ${errorMessage}`));
+        const errorWithResponse = error as { response?: { data?: unknown } };
+        if (errorWithResponse.response?.data) {
+          console.log(chalk.gray(`   Response: ${JSON.stringify(errorWithResponse.response.data).substring(0, 100)}...`));
         }
       }
     }

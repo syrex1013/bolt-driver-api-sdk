@@ -51,7 +51,7 @@ export async function authExample() {
   printHeader();
 
   const tokenPath = path.join(__dirname, "..", ".bolt-token.json");
-  let userInput = await getUserInput(tokenPath);
+  const userInput = await getUserInput(tokenPath);
 
   // Device information
   const deviceInfo: DeviceInfo = {
@@ -417,7 +417,7 @@ async function showAuthSuccess(
   }
 }
 
-async function handleAuthError(error: any) {
+async function handleAuthError(error: unknown) {
   ora().fail(chalk.red("Authentication failed"));
   const errorMessage = error instanceof Error ? error.message : "Unknown error";
 
@@ -462,17 +462,18 @@ async function performMagicLinkAuthentication(
     console.log(chalk.green(`✓ Token extracted: ${token.substring(0, 20)}...`));
 
     const gpsInfo: GpsInfo = {
-      latitude: 51.233186,
-      longitude: 22.518373,
-      accuracy: 19.791364,
-      bearing: 0,
-      speed: -1.000007,
+      latitude: 51.23325,
+      longitude: 22.518497,
+      accuracy: 17.331588,
+      bearing: 337.379444,
+      speed: 0.235321,
       timestamp: Math.floor(Date.now() / 1000),
-      age: 30.01,
-      accuracyMeters: 19.791364,
+      age: 26.03,
+      accuracyMeters: 13.821502,
       adjustedBearing: 0,
-      bearingAccuracyDeg: 0,
-      speedAccuracyMps: 1.179999947547913,
+      bearingAccuracyDeg: 180,
+      speedAccuracyMps: 1.808204567744442,
+      gps_speed_accuracy: 1, // Added missing property
     };
 
     const authResponse = await boltAPI.authenticateWithMagicLink(

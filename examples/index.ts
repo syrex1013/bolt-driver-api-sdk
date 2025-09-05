@@ -66,7 +66,8 @@ async function main() {
         await authExample();
         break;
       case 'enhanced':
-        await import('./enhanced');
+        const { enhancedExample } = await import('./enhanced');
+        await enhancedExample();
         break;
       case 'cli':
         await import('./cli');

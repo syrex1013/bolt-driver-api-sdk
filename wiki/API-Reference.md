@@ -27,6 +27,7 @@ startAuthentication(
 ```
 
 **Parameters:**
+
 - `deviceParams`: Device information (ID, type, OS, app version)
 - `authConfig`: Authentication settings (country, language, brand)
 - `credentials`: Driver credentials (phone, driver_id, session_id)
@@ -34,6 +35,7 @@ startAuthentication(
 **Returns:** `StartAuthResponse` with session ID for confirmation
 
 **Throws:**
+
 - `SmsLimitError` (299): SMS sending limit reached
 - `InvalidPhoneError` (300): Invalid phone number format
 - `DatabaseError` (301): Database-related error
@@ -50,12 +52,14 @@ confirmAuthentication(
 ```
 
 **Parameters:**
+
 - `sessionId`: Session ID from startAuthentication
 - `smsCode`: SMS verification code
 
 **Returns:** `ConfirmAuthResponse` with authentication tokens
 
 **Throws:**
+
 - `InvalidSmsCodeError` (302): Invalid or expired SMS code
 - `NotAuthorizedError` (503): Authorization failed
 
@@ -68,6 +72,7 @@ sendMagicLink(email: string): Promise<MagicLinkResponse>
 ```
 
 **Parameters:**
+
 - `email`: Email address to send magic link
 
 **Returns:** `MagicLinkResponse` with success status
@@ -83,6 +88,7 @@ authenticateWithMagicLink(
 ```
 
 **Parameters:**
+
 - `magicLinkUrl`: Full magic link URL from email
 
 **Returns:** `MagicLinkVerificationResponse` with driver information
@@ -101,6 +107,7 @@ getDriverState(
 ```
 
 **Parameters:**
+
 - `gpsInfo`: GPS location and accuracy
 - `appState`: Application state ('background' or 'foreground')
 
@@ -117,6 +124,7 @@ getDriverHomeScreen(
 ```
 
 **Parameters:**
+
 - `gpsInfo`: GPS location and accuracy
 
 **Returns:** `HomeScreenData` with layout, items, polling interval
@@ -142,6 +150,7 @@ getWorkingTimeInfo(
 ```
 
 **Parameters:**
+
 - `gpsInfo`: GPS location and accuracy
 
 **Returns:** `WorkingTimeInfo` with hours worked, breaks
@@ -160,6 +169,7 @@ getScheduledRideRequests(
 ```
 
 **Parameters:**
+
 - `gpsInfo`: GPS location and accuracy
 - `groupBy`: Grouping option ('upcoming', 'accepted')
 
@@ -178,6 +188,7 @@ getOrderHistory(
 ```
 
 **Parameters:**
+
 - `gpsInfo`: GPS location and accuracy
 - `limit`: Number of orders to fetch
 - `offset`: Pagination offset
@@ -196,6 +207,7 @@ getRideDetails(
 ```
 
 **Parameters:**
+
 - `gpsInfo`: GPS location and accuracy
 - `orderHandle`: Order identification object
 
@@ -213,6 +225,7 @@ getActivityRides(
 ```
 
 **Parameters:**
+
 - `gpsInfo`: GPS location and accuracy
 - `groupBy`: Grouping option ('all', 'hourly', 'daily')
 
@@ -256,6 +269,7 @@ getEarningsChart(
 ```
 
 **Parameters:**
+
 - `chartType`: Chart type ('weekly', 'monthly')
 
 **Returns:** Chart data with earnings over time
@@ -272,6 +286,7 @@ getEarningsDailyBreakdown(
 ```
 
 **Parameters:**
+
 - `date`: Date in YYYY-MM-DD format
 
 **Returns:** Detailed earnings for the specified day
@@ -399,6 +414,7 @@ getMapTile(
 ```
 
 **Parameters:**
+
 - `tileRequest`: Tile coordinates and zoom level
 
 **Returns:** Map tile data
@@ -472,6 +488,7 @@ setLoggingConfig(config: Partial<LoggingConfig>): void
 ```
 
 **Parameters:**
+
 - `config`: Logging configuration options
 
 ### getLogger
@@ -497,6 +514,7 @@ class BoltApiError extends Error {
 ```
 
 Common error codes:
+
 - `299`: SMS limit reached
 - `300`: Invalid phone number
 - `301`: Database error
@@ -511,6 +529,7 @@ For complete type definitions, see [TypeScript Types](TypeScript-Types.md).
 ## Examples
 
 For usage examples, see:
+
 - [Authentication Examples](Examples-Authentication.md)
 - [Ride Tracking Examples](Examples-Ride-Tracking.md)
 - [Earnings Examples](Examples-Earnings.md)

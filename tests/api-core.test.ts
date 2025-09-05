@@ -47,17 +47,18 @@ describe('BoltDriverAPI Core Functionality', () => {
 
     // Mock GPS info
     mockGpsInfo = {
-      latitude: 51.233250,
-      longitude: 22.518497,
-      accuracy: 17.331588,
-      bearing: 337.379444,
-      speed: 0.235321,
-      timestamp: 1755901903,
-      age: 26.03,
-      accuracyMeters: 13.821502,
+      latitude: 52.237049,
+      longitude: 21.017532,
+      accuracy: 10,
+      speed: 0,
+      bearing: 0,
+      timestamp: Date.now(),
+      age: 0,
+      accuracyMeters: 10,
       adjustedBearing: 0,
-      bearingAccuracyDeg: 180,
-      speedAccuracyMps: 1.808204567744442
+      bearingAccuracyDeg: 0,
+      speedAccuracyMps: 0,
+      gps_speed_accuracy: 1, // Added for GpsInfo type consistency
     };
 
     // Create API instance
@@ -90,7 +91,7 @@ describe('BoltDriverAPI Core Functionality', () => {
 
       // Mock authenticated state
       (boltAPI as any).accessToken = 'test-token';
-      (boltAPI as any).sessionInfo = { driverId: 123 };
+      (boltAPI as any).sessionInfo = { driverId: 123, expiresAt: Date.now() + 3600000 };
       expect(boltAPI.isAuthenticated()).toBe(true);
     });
 
@@ -106,7 +107,7 @@ describe('BoltDriverAPI Core Functionality', () => {
     it('should clear authentication data and reset session state', () => {
       // Mock authenticated state
       (boltAPI as any).accessToken = 'test-token';
-      (boltAPI as any).sessionInfo = { driverId: 123 };
+      (boltAPI as any).sessionInfo = { driverId: 123, expiresAt: Date.now() + 3600000 };
       expect(boltAPI.isAuthenticated()).toBe(true);
 
       boltAPI.clearAuthentication();

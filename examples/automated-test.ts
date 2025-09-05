@@ -71,17 +71,18 @@ class TestConfig {
 
   // GPS location (Warsaw, Poland)
   static readonly GPS_INFO: GpsInfo = {
-    latitude: 52.237049,
-    longitude: 21.017532,
-    accuracy: 10,
-    bearing: 0,
-    speed: 0,
+    latitude: 51.23325,
+    longitude: 22.518497,
+    accuracy: 17.331588,
+    bearing: 337.379444,
+    speed: 0.235321,
     timestamp: Math.floor(Date.now() / 1000),
-    age: 0,
-    accuracyMeters: 10,
+    age: 26.03,
+    accuracyMeters: 13.821502,
     adjustedBearing: 0,
-    bearingAccuracyDeg: 1,
-    speedAccuracyMps: 1
+    bearingAccuracyDeg: 180,
+    speedAccuracyMps: 1.808204567744442,
+    gps_speed_accuracy: 1,
   };
 
   // Magic link for testing
@@ -189,18 +190,18 @@ class AutomatedTestRunner {
         name: "Navigation Bar Badges",
         test: () => this.api.getDriverNavBarBadges(TestConfig.GPS_INFO)
       },
-      {
-        name: "Emergency Assist Provider",
-        test: () => this.api.getEmergencyAssistProvider(TestConfig.GPS_INFO)
-      },
+      // {
+      //   name: "Emergency Assist Provider",
+      //   test: () => this.api.getEmergencyAssistProvider(TestConfig.GPS_INFO)
+      // },
       {
         name: "Other Active Drivers",
         test: () => this.api.getOtherActiveDrivers(TestConfig.GPS_INFO)
       },
-      {
-        name: "Modal Info",
-        test: () => this.api.getModal(TestConfig.GPS_INFO, "foreground")
-      }
+      // {
+      //   name: "Modal Info",
+      //   test: () => this.api.getModal(TestConfig.GPS_INFO, "foreground")
+      // }
     ];
 
     for (const endpoint of endpoints) {

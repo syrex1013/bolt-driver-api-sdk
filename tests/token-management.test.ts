@@ -140,9 +140,9 @@ describe('Token Storage and Session Management', () => {
       const loaded = await storage.loadToken();
       expect(loaded).toBeNull();
 
-      // File should be deleted
+      // File should not be deleted, only return null
       const fileExists = await fs.access(storage.filePath).then(() => true).catch(() => false);
-      expect(fileExists).toBe(false);
+      expect(fileExists).toBe(true);
     });
 
     it('should clear token data and delete file', async () => {

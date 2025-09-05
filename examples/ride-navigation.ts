@@ -15,7 +15,7 @@
  */
 
 import { BoltDriverAPI } from "../src";
-import { GpsInfo, OrderHandle } from "../src/types";
+import { GpsInfo, OrderHandle, OrderHistoryItem } from "../src/types";
 import chalk from "chalk";
 import ora from "ora";
 import prompts from "prompts";
@@ -63,14 +63,14 @@ class RideNavigationExample {
           name: "latitude",
           message: "Enter latitude:",
           initial: 52.237049,
-          validate: (value) => value >= -90 && value <= 90
+          validate: (value: number) => value >= -90 && value <= 90
         },
         {
           type: "number",
           name: "longitude",
           message: "Enter longitude:",
           initial: 21.017532,
-          validate: (value) => value >= -180 && value <= 180
+          validate: (value: number) => value >= -180 && value <= 180
         }
       ]);
 
@@ -79,11 +79,15 @@ class RideNavigationExample {
         longitude: coordinates.longitude,
         accuracy: 10,
         speed: 0,
-        heading: 0,
         gps_speed_accuracy: 1,
-        gps_bearing_accuracy: 1,
-        altitude: 100,
-        timestamp: Date.now()
+        bearingAccuracyDeg: 180,
+        timestamp: Date.now(),
+        // Default values for missing GpsInfo properties
+        bearing: 0,
+        age: 0,
+        accuracyMeters: 10,
+        adjustedBearing: 0,
+        speedAccuracyMps: 0,
       };
     }
 
@@ -93,11 +97,15 @@ class RideNavigationExample {
       longitude: 21.017532,
       accuracy: 10,
       speed: 0,
-      heading: 0,
       gps_speed_accuracy: 1,
-      gps_bearing_accuracy: 1,
-      altitude: 100,
-      timestamp: Date.now()
+      bearingAccuracyDeg: 180,
+      timestamp: Date.now(),
+      // Default values for missing GpsInfo properties
+      bearing: 0,
+      age: 0,
+      accuracyMeters: 10,
+      adjustedBearing: 0,
+      speedAccuracyMps: 0,
     };
   }
 
@@ -120,11 +128,13 @@ class RideNavigationExample {
       spinner.text = "No active ride, fetching recent rides...";
       const orderHistory = await this.api.getOrderHistory(gpsInfo, 10, 0);
       
-      if (orderHistory.orders && orderHistory.orders.length > 0) {
+      if (orderHistory.data && orderHistory.data.orders && orderHistory.data.orders.length > 0) {
         spinner.stop();
-        
+
+        const orders: OrderHistoryItem[] = orderHistory.data.orders;
+
         console.log(chalk.yellow("\n📋 Recent Rides:"));
-        orderHistory.orders.forEach((order, index) => {
+        orders.forEach((order: OrderHistoryItem, index: number) => {
           const statusColor = order.state === "finished" ? chalk.green : 
                             order.state === "client_cancelled" ? chalk.yellow :
                             order.state === "driver_rejected" ? chalk.red : chalk.gray;
@@ -139,11 +149,11 @@ class RideNavigationExample {
           name: "selectedIndex",
           message: "Select a ride (1-10):",
           initial: 1,
-          validate: (value) => value >= 1 && value <= orderHistory.orders.length
+          validate: (value: number) => value >= 1 && value <= orders.length
         });
 
-        if (selectedIndex) {
-          return orderHistory.orders[selectedIndex - 1].order_handle;
+        if (selectedIndex !== undefined && selectedIndex >= 1 && selectedIndex <= orders.length) {
+          return orders[selectedIndex - 1]!.order_handle;
         }
       }
 
@@ -169,7 +179,7 @@ class RideNavigationExample {
       console.log(chalk.gray("─".repeat(50)));
 
       // Basic ride info
-      console.log(chalk.white(`Order ID: ${orderHandle.order_id}`));
+      console.log(chalk.white(`Order ID: ${orderHandle.orderId}`));
       console.log(chalk.white(`Status: ${rideDetails.state || "Unknown"}`));
       
       if (rideDetails.pickup_address) {
@@ -300,7 +310,7 @@ class RideNavigationExample {
   /**
    * Report arrival at pickup location
    */
-  private async arriveAtPickup(gpsInfo: GpsInfo, orderHandle: OrderHandle): Promise<void> {
+  private async arriveAtPickup(_gpsInfo: GpsInfo, _orderHandle: OrderHandle): Promise<void> {
     const spinner = ora("Reporting arrival at pickup...").start();
     
     try {
@@ -340,13 +350,13 @@ class RideNavigationExample {
   /**
    * Update ride progress
    */
-  private async updateRideProgress(gpsInfo: GpsInfo, orderHandle: OrderHandle): Promise<void> {
+  private async updateRideProgress(_gpsInfo: GpsInfo, _orderHandle: OrderHandle): Promise<void> {
     const { progress } = await prompts({
       type: "number",
       name: "progress",
       message: "Enter ride completion percentage (0-100):",
       initial: 50,
-      validate: (value) => value >= 0 && value <= 100
+      validate: (value: number) => value >= 0 && value <= 100
     });
 
     console.log(chalk.blue(`\n📊 Ride Progress: ${progress}%`));
@@ -380,7 +390,7 @@ class RideNavigationExample {
         name: "rating",
         message: "Rate the passenger (1-5):",
         initial: 5,
-        validate: (value) => value >= 1 && value <= 5
+        validate: (value: number) => value >= 1 && value <= 5
       });
       
       console.log(chalk.yellow(`\n⭐ Passenger rated: ${rating}/5`));
@@ -392,7 +402,7 @@ class RideNavigationExample {
   /**
    * Report navigation issue
    */
-  private async reportNavigationIssue(gpsInfo: GpsInfo, orderHandle: OrderHandle): Promise<void> {
+  private async reportNavigationIssue(_gpsInfo: GpsInfo, _orderHandle: OrderHandle): Promise<void> {
     const issueTypes = [
       { title: "Wrong pickup location", value: "wrong_pickup" },
       { title: "Wrong destination", value: "wrong_destination" },
@@ -474,7 +484,9 @@ class RideNavigationExample {
     {
       country: "pl",
       language: "en-GB",
-      brand: "bolt"
+      brand: "bolt",
+      authMethod: "phone", // Added missing property
+      theme: "dark" // Added missing property
     }
   );
 

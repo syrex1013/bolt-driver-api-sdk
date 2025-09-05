@@ -86,6 +86,8 @@ export interface GpsInfo {
   bearingAccuracyDeg: number;
   /** Speed accuracy in meters per second */
   speedAccuracyMps: number;
+  /** GPS speed accuracy in meters per second (alternative property) */
+  gps_speed_accuracy: number;
 }
 
 // Authentication and Session
@@ -180,6 +182,96 @@ export interface SessionInfo {
   };
 }
 
+export interface DriverState {
+  driver_status: string;
+  next_polling_in_sec?: number;
+  active_order_handle?: OrderHandle;
+}
+
+export interface HomeScreenData {
+  layout: {
+    maxRow: number;
+    maxColumn: number;
+  };
+  items: HomeScreenItem[];
+  pollIntervalSec: number;
+  driverSidebarHash: string;
+}
+
+export interface HomeScreenItem {
+  type: string;
+  id: string;
+  layout: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  };
+  data: Record<string, unknown>;
+}
+
+export interface WorkingTimeInfo {
+  daily_online_duration_seconds: number;
+  daily_driving_duration_seconds: number;
+  weekly_online_duration_seconds: number;
+  weekly_driving_duration_seconds: number;
+}
+
+export interface DispatchPreferences {
+  is_dispatch_enabled: boolean;
+  categories: Array<{
+    id: string;
+    name: string;
+    is_enabled: boolean;
+  }>;
+}
+
+export interface OrderHandle {
+  orderId: string;
+  cityId: number;
+  orderSystem: string;
+}
+
+// Ride Details
+export interface RideDetails {
+  state: string;
+  pickup_address: string;
+  pickup_location: { lat: number; lng: number };
+  destination_address: string;
+  destination_location: { lat: number; lng: number };
+  route_info: {
+    distance_km: number;
+    duration_min: number;
+    eta: string;
+  };
+  passenger_info: {
+    name: string;
+    rating: number;
+    phone?: string;
+  };
+  payment_info: {
+    type: string;
+    amount: string;
+    currency: string;
+  };
+}
+
+export interface OrderHistoryItem {
+  address: string;
+  state: string;
+  created: string;
+  payment_type: string;
+  price_str?: string;
+  order_handle: OrderHandle;
+}
+
+export interface OrderHistoryData {
+  orders: OrderHistoryItem[];
+  limit: number;
+  offset: number;
+  total: number;
+}
+
 // API Response Types
 
 /**
@@ -214,7 +306,7 @@ export interface SessionInfo {
  * @since 1.0.0
  * @author Bolt Driver API Team
  */
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   /** Response status code (0 for success, non-zero for errors) */
   code: number;
   /** Human-readable status message */
@@ -226,7 +318,7 @@ export interface ApiResponse<T = any> {
     /** Human-readable error description */
     text?: string;
     /** Additional error metadata */
-    [key: string]: any;
+    [key: string]: unknown;
   };
 }
 
@@ -269,7 +361,7 @@ export interface NavBarBadges {
 
 // External Help Provider
 export interface ExternalHelpProvider {
-  external_help_provider: any;
+  external_help_provider: unknown;
 }
 
 // Map Tile Request
@@ -293,12 +385,12 @@ export interface PushProfileRequest {
 
 // Other Active Drivers
 export interface OtherActiveDrivers {
-  list: any[];
+  list: unknown[];
 }
 
 // Modal Information
 export interface ModalInfo {
-  data: any;
+  data: unknown;
 }
 
 // Maps Configuration
@@ -307,103 +399,12 @@ export interface MapsConfig {
     surge_heatmap: {
       show_on_picker: boolean;
       tiles_collection_id: string;
-      label_per_category: any;
-      default_properties: any;
-      icons: any;
+      label_per_category: Record<string, string>;
+      default_properties: Record<string, unknown>;
+      icons: Record<string, unknown>;
     };
   };
   tile_collections_picker_ui: {
-    options: Array<{
-      tile_collection: string;
-      picker_option_icon: {
-        type: string;
-        light_url: { url: string };
-      };
-      is_default: boolean;
-      badge_icon: {
-        type: string;
-        light_url: { url: string };
-      };
-      title: string;
-      description: string;
-    }>;
-  };
-}
-
-// Driver State and Status
-export interface DriverState {
-  driverState: "inactive" | "active" | "busy" | "offline";
-  takeNewOrdersDuringOrder: boolean;
-  orderAcceptance: "auto" | "manual";
-  maxClientDistance: number;
-  orders: any[];
-  driverDestinationId: number;
-  categoriesHash: string;
-  pollIntervalSec: number;
-  emergencyAssistProviderHash: string;
-  pendingBusyState: boolean;
-}
-
-// Home Screen Data
-export interface HomeScreenData {
-  layout: {
-    maxRow: number;
-    maxColumn: number;
-  };
-  items: HomeScreenItem[];
-  pollIntervalSec: number;
-  driverSidebarHash: string;
-}
-
-export interface HomeScreenItem {
-  type: "banner" | "tile" | "simple_tile";
-  payload: any;
-  layout: {
-    row: number;
-    column: number;
-    height: number;
-    width: number;
-  };
-}
-
-// Working Time Information
-export interface WorkingTimeInfo {
-  workingTimeLeftInSeconds: number;
-  timeLeftUntilWorkingTimeResetInSeconds: number;
-  workingTimeLimitInHours: number;
-  offlineTimeLimitInHours: number;
-  isWorkingTimeTicking: boolean;
-  isRestTimeTicking: boolean;
-}
-
-// Dispatch Preferences
-export interface DispatchPreferences {
-  searchCategories: {
-    data: CategoryInfo[];
-  };
-  combinedStatus: string;
-  orderAcceptance: string;
-}
-
-export interface CategoryInfo {
-  id: string;
-  name: string;
-  selected: boolean;
-  optOutDisabled: boolean;
-}
-
-// Maps Configuration
-export interface MapsConfig {
-  tileCollections: {
-    surgeHeatmap: {
-      showOnPicker: boolean;
-      tilesCollectionId: string;
-      labelPerCategory: Record<string, string>;
-      defaultProperties: Record<string, any>;
-      icons: Record<string, any>;
-    };
-  };
-  tileCollectionsPickerUi: {
     options: TileCollectionOption[];
   };
 }
@@ -421,7 +422,7 @@ export interface TileCollectionOption {
     type: string;
     lightUrl: {
       url: string;
-    };
+    }
   };
   title: string;
   description: string;
@@ -468,7 +469,7 @@ export interface ConfirmAuthResponse {
   };
   error_data?: {
     text?: string;
-    [key: string]: any;
+    [key: string]: unknown;
   };
 }
 
@@ -526,6 +527,10 @@ export interface RequestParams {
   limit?: number;
   offset?: number;
   app_platform_provider?: string;
+  order_id?: string;
+  gps_speed_accuracy_mps?: number;
+  gps_speed_accuracy?: number;
+  gps_bearing_accuracy_deg?: number;
 }
 
 // Error Types
@@ -533,7 +538,7 @@ export class BoltApiError extends Error {
   constructor(
     message: string,
     public statusCode: number,
-    public response?: any
+    public response?: unknown
   ) {
     super(message);
     this.name = "BoltApiError";
@@ -544,49 +549,49 @@ export class BoltApiError extends Error {
  * Represents a "NOT_AUTHORIZED" error from the Bolt Driver API.
  */
 export class NotAuthorizedError extends BoltApiError {
-  constructor(message: string, response?: any) {
+  constructor(message: string, response?: unknown) {
     super(message, 503, response);
     this.name = "NotAuthorizedError";
   }
 }
 
 export class AuthenticationError extends BoltApiError {
-  constructor(message: string, statusCode: number, response?: any) {
+  constructor(message: string, statusCode: number, response?: unknown) {
     super(message, statusCode, response);
     this.name = "AuthenticationError";
   }
 }
 
 export class ValidationError extends BoltApiError {
-  constructor(message: string, statusCode: number, response?: any) {
+  constructor(message: string, statusCode: number, response?: unknown) {
     super(message, statusCode, response);
     this.name = "ValidationError";
   }
 }
 
 export class SmsLimitError extends BoltApiError {
-  constructor(message: string, response?: any) {
+  constructor(message: string, response?: unknown) {
     super(message, 200, response);
     this.name = "SmsLimitError";
   }
 }
 
 export class InvalidSmsCodeError extends BoltApiError {
-  constructor(message: string, response?: any) {
+  constructor(message: string, response?: unknown) {
     super(message, 200, response);
     this.name = "InvalidSmsCodeError";
   }
 }
 
 export class InvalidPhoneError extends BoltApiError {
-  constructor(message: string, response?: any) {
+  constructor(message: string, response?: unknown) {
     super(message, 200, response);
     this.name = "InvalidPhoneError";
   }
 }
 
 export class DatabaseError extends BoltApiError {
-  constructor(message: string, response?: any) {
+  constructor(message: string, response?: unknown) {
     super(message, 200, response);
     this.name = "DatabaseError";
   }
@@ -637,8 +642,8 @@ export interface LogEntry {
   level: string;
   method: string;
   url: string;
-  requestData?: any;
-  responseData?: any;
-  error?: any;
+  requestData?: unknown;
+  responseData?: unknown;
+  error?: unknown;
   duration?: number;
 }

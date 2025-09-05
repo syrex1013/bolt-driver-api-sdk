@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { jest } from '@jest/globals';
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
 import { BoltDriverAPI } from '../src/BoltDriverAPI';
@@ -48,7 +49,8 @@ describe('Driver Endpoints Integration Tests', () => {
     accuracyMeters: 19.791364,
     adjustedBearing: 0,
     bearingAccuracyDeg: 0,
-    speedAccuracyMps: 1.179999947547913
+    speedAccuracyMps: 1.179999947547913,
+    gps_speed_accuracy: 1
   };
 
   beforeEach(() => {
@@ -61,7 +63,7 @@ describe('Driver Endpoints Integration Tests', () => {
     api = new BoltDriverAPI(deviceInfo, authConfig);
 
     // Mock the ensureValidToken method to avoid token validation
-    jest.spyOn(api as any, 'ensureValidToken').mockResolvedValue(undefined);
+    jest.spyOn(api as unknown as { ensureValidToken: jest.Mock }, 'ensureValidToken').mockResolvedValue(undefined as never);
 
     // Mock session info to avoid undefined errors
     Object.defineProperty(api, 'sessionInfo', {
@@ -263,18 +265,68 @@ describe('Driver Endpoints Integration Tests', () => {
         expect(result).toEqual({ menuItems: [] });
       });
     });
+
+    describe('getEmergencyAssistProvider', () => {
+      it('should retrieve emergency assist provider information', async () => {
+        const mockResponse: AxiosResponse<ApiResponse> = {
+          data: { code: 0, message: 'OK', data: { provider_name: 'Emergency Services' } },
+          status: 200,
+          statusText: 'OK',
+          headers: {},
+          config: {} as any
+        };
+        mockClient.get.mockResolvedValueOnce(mockResponse);
+
+        const result = await api.getEmergencyAssistProvider(testGpsInfo);
+        expect(result).toEqual({ code: 0, message: 'OK', data: { provider_name: 'Emergency Services' } });
+        expect(mockClient.get).toHaveBeenCalledWith(
+          "https://partnerdriver.live.boltsvc.net/partnerDriver/safety/emergencyAssist/getExternalHelpProvider",
+          expect.objectContaining({
+            params: expect.any(Object) // Simplified to expect any object for params
+          })
+        );
+      });
+    });
+
+    describe('getModal', () => {
+      it('should retrieve modal information', async () => {
+        const mockResponse: AxiosResponse<ApiResponse> = {
+          data: { code: 0, message: 'OK', data: { modal_id: 'welcome_modal' } },
+          status: 200,
+          statusText: 'OK',
+          headers: {},
+          config: {} as any
+        };
+        mockClient.get.mockResolvedValueOnce(mockResponse);
+
+        const result = await api.getModal(testGpsInfo, 'foreground');
+        expect(result).toEqual({ modal_id: 'welcome_modal' });
+        expect(mockClient.get).toHaveBeenCalledWith(
+          expect.stringContaining('modal'),
+          expect.objectContaining({
+            params: expect.objectContaining({
+              brand: 'bolt',
+              country: 'pl',
+              deviceId: deviceInfo.deviceId,
+              deviceType: deviceInfo.deviceType,
+              event: 'foreground',
+            })
+          })
+        );
+      });
+    });
   });
 
   describe('Parameter Validation and Error Handling', () => {
     it('should validate required parameters and reject invalid requests', async () => {
       // Mock the method to throw an error for invalid parameters
-      jest.spyOn(api as any, 'buildRequestParams').mockImplementation(() => {
+      jest.spyOn(api as unknown as { buildRequestParams: jest.Mock }, 'buildRequestParams').mockImplementation(() => {
         throw new Error('Invalid parameters');
       });
 
       // Test with missing required parameters
       const incompleteParams = { brand: 'bolt' };
-      await expect(api.getScheduledRideRequests(incompleteParams as any)).rejects.toThrow();
+      await expect(api.getScheduledRideRequests(incompleteParams as unknown as GpsInfo)).rejects.toThrow();
     });
 
     it('should handle optional parameters correctly in requests', async () => {

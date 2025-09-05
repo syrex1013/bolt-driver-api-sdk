@@ -1,6 +1,6 @@
 # Bolt Driver API SDK
 
-<div align="center">
+<p align="center">
 
 ![Bolt Driver API](https://img.shields.io/badge/Bolt-Driver%20API-00D100?style=for-the-badge&logo=bolt&logoColor=white)
 ![npm version](https://img.shields.io/npm/v/bolt-driver-api?style=for-the-badge)
@@ -8,11 +8,15 @@
 ![Build Status](https://img.shields.io/github/actions/workflow/status/bolt-driver-api/bolt-driver-api-sdk/test.yml?style=for-the-badge)
 ![Coverage](https://img.shields.io/codecov/c/github/bolt-driver-api/bolt-driver-api-sdk?style=for-the-badge)
 
-**The official Node.js SDK for integrating with Bolt's driver platform API**
+## The official Node.js SDK for integrating with Bolt's driver platform API
 
-[Documentation](#documentation) • [Quick Start](#quick-start) • [Examples](#examples) • [API Reference](#api-reference) • [Contributing](#contributing)
+- [Documentation](#-documentation)
+- [Quick Start](#-quick-start)
+- [Examples](#-examples)
+- [API Reference](#️-api-reference)
+- [Contributing](#-contributing)
 
-</div>
+</p>
 
 ---
 
@@ -451,12 +455,12 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 💬 Support
 
-For support, please open an issue in the [GitHub repository](https://github.com/bolt-driver-api/bolt-driver-api-sdk/issues) or contact us at team@boltdriverapi.com.
+For support, please open an issue in the [GitHub repository](https://github.com/bolt-driver-api/bolt-driver-api-sdk/issues) or contact us at <team@boltdriverapi.com>.
 
 ---
 
-<div align="center">
+<p align="center">
 
 Made with ❤️ by the Bolt Driver API Team
 
-</div>
+</p>

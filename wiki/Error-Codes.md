@@ -9,14 +9,17 @@ This document provides a comprehensive list of all error codes returned by the B
 **Description:** Maximum number of SMS authentication attempts reached in 24 hours.
 
 **Common Causes:**
+
 - Too many login attempts in a short period
 - Multiple failed authentication attempts
 
 **Resolution:**
+
 - Wait 24 hours before trying SMS authentication again
 - Use magic link authentication as an alternative
 
 **Example:**
+
 ```typescript
 try {
   await api.startAuthentication(...);
@@ -33,11 +36,13 @@ try {
 **Description:** The provided phone number format is invalid.
 
 **Common Causes:**
+
 - Missing country code
 - Invalid number format
 - Non-existent country code
 
 **Resolution:**
+
 - Include full international format (e.g., +48123456789)
 - Verify country code is correct
 - Remove spaces and special characters
@@ -47,10 +52,12 @@ try {
 **Description:** Server-side database error occurred.
 
 **Common Causes:**
+
 - Temporary server issues
 - Database maintenance
 
 **Resolution:**
+
 - Retry the request after a few seconds
 - Contact support if issue persists
 
@@ -59,11 +66,13 @@ try {
 **Description:** The SMS verification code is incorrect or expired.
 
 **Common Causes:**
+
 - Typed wrong code
 - Code expired (usually after 5 minutes)
 - Using code from previous attempt
 
 **Resolution:**
+
 - Double-check the code
 - Request a new code if expired
 - Ensure using the latest SMS received
@@ -73,11 +82,13 @@ try {
 **Description:** Authentication failed or access denied.
 
 **Common Causes:**
+
 - Invalid credentials
 - Account suspended
 - Token expired
 
 **Resolution:**
+
 - Verify credentials are correct
 - Re-authenticate if token expired
 - Contact support for account issues
@@ -89,11 +100,13 @@ try {
 **Description:** Request requires authentication or token is invalid.
 
 **Common Causes:**
+
 - Missing authentication token
 - Expired access token
 - Invalid token format
 
 **Resolution:**
+
 ```typescript
 // Handle globally
 if (error.response?.status === 401) {
@@ -108,11 +121,13 @@ if (error.response?.status === 401) {
 **Description:** Request parameters are invalid.
 
 **Common Causes:**
+
 - Missing required parameters
 - Invalid parameter values
 - Wrong data types
 
 **Resolution:**
+
 - Check API documentation for required parameters
 - Validate input data before sending
 - Review parameter types and formats
@@ -122,11 +137,13 @@ if (error.response?.status === 401) {
 **Description:** Requested resource not found.
 
 **Common Causes:**
+
 - Invalid order ID
 - Ride doesn't exist
 - Wrong endpoint URL
 
 **Resolution:**
+
 - Verify resource ID is correct
 - Check if resource still exists
 - Ensure using correct API endpoint
@@ -136,11 +153,13 @@ if (error.response?.status === 401) {
 **Description:** Too many requests sent in a given time period.
 
 **Common Causes:**
+
 - Polling too frequently
 - Batch operations too fast
 - Not respecting polling intervals
 
 **Resolution:**
+
 ```typescript
 // Respect polling intervals
 const state = await api.getDriverState(gps);
@@ -154,10 +173,12 @@ setTimeout(() => {
 **Description:** Server encountered an unexpected error.
 
 **Common Causes:**
+
 - Server malfunction
 - Temporary service disruption
 
 **Resolution:**
+
 - Retry with exponential backoff
 - Report persistent issues
 
@@ -168,10 +189,12 @@ setTimeout(() => {
 **Description:** Operation requires driver to be online.
 
 **Common Causes:**
+
 - Trying to accept rides while offline
 - Accessing features requiring online status
 
 **Resolution:**
+
 - Set driver status to online first
 - Check driver state before operations
 
@@ -180,10 +203,12 @@ setTimeout(() => {
 **Description:** Ride has already been accepted by another driver.
 
 **Common Causes:**
+
 - Slow response to ride request
 - High demand area
 
 **Resolution:**
+
 - React faster to ride requests
 - Move to less competitive areas
 
@@ -192,11 +217,13 @@ setTimeout(() => {
 **Description:** GPS location is invalid or outside service area.
 
 **Common Causes:**
+
 - GPS accuracy too low
 - Outside Bolt service area
 - Invalid coordinates
 
 **Resolution:**
+
 ```typescript
 // Ensure valid GPS data
 const gpsInfo = {
@@ -212,11 +239,13 @@ const gpsInfo = {
 **Description:** Driver has outstanding payments or fees.
 
 **Common Causes:**
+
 - Unpaid commission
 - Outstanding fines
 - Negative balance
 
 **Resolution:**
+
 - Check balance in earnings section
 - Make required payments
 - Contact support for payment plans
@@ -228,11 +257,13 @@ const gpsInfo = {
 **Description:** Network connection failed.
 
 **Common Causes:**
+
 - No internet connection
 - Request timeout
 - DNS resolution failure
 
 **Resolution:**
+
 ```typescript
 // Implement retry logic
 async function withRetry(fn, retries = 3) {
@@ -361,6 +392,7 @@ api.getLogger().error('Custom error', {
 **Problem:** Keep getting 401 errors even after authentication.
 
 **Solution:**
+
 ```typescript
 // Clear old tokens
 api.clearAuthentication();
@@ -374,6 +406,7 @@ await api.startAuthentication(...);
 **Problem:** Random network errors in good connection.
 
 **Solution:**
+
 ```typescript
 // Increase timeout
 const api = new BoltDriverAPI(
@@ -391,6 +424,7 @@ const api = new BoltDriverAPI(
 **Problem:** Frequently hitting rate limits.
 
 **Solution:**
+
 ```typescript
 // Implement request queue
 class RequestQueue {

@@ -16,11 +16,12 @@ First off, thank you for considering contributing to the Bolt Driver API SDK! It
 
 ## Code of Conduct
 
-This project and everyone participating in it is governed by our Code of Conduct. By participating, you are expected to uphold this code. Please report unacceptable behavior to team@boltdriverapi.com.
+This project and everyone participating in it is governed by our Code of Conduct. By participating, you are expected to uphold this code. Please report unacceptable behavior to <team@boltdriverapi.com>.
 
 ## Getting Started
 
 Before you begin:
+
 - Have you read the [documentation](https://github.com/bolt-driver-api/bolt-driver-api-sdk/wiki)?
 - Check if your issue/idea has already been reported/discussed in [Issues](https://github.com/bolt-driver-api/bolt-driver-api-sdk/issues)
 - Check if your idea fits with the scope and aims of the project
@@ -32,6 +33,7 @@ Before you begin:
 Before creating bug reports, please check existing issues as you might find out that you don't need to create one. When you are creating a bug report, please include as many details as possible:
 
 **Bug Report Template:**
+
 ```markdown
 ### Description
 [Clear and concise description of the bug]
@@ -72,22 +74,26 @@ Enhancement suggestions are tracked as GitHub issues. When creating an enhanceme
 
 1. Fork the repo
 2. Clone your fork:
+
    ```bash
    git clone https://github.com/your-username/bolt-driver-api-sdk.git
    cd bolt-driver-api-sdk
    ```
 
 3. Install dependencies:
+
    ```bash
    npm install
    ```
 
 4. Create a branch:
+
    ```bash
    git checkout -b feature/your-feature-name
    ```
 
 5. Make your changes and ensure tests pass:
+
    ```bash
    npm test
    npm run lint
@@ -104,7 +110,7 @@ Enhancement suggestions are tracked as GitHub issues. When creating an enhanceme
 
 ### Project Structure
 
-```
+```text
 bolt-driver-api-sdk/
 ├── src/                  # Source code
 │   ├── index.ts         # Main export
@@ -196,7 +202,8 @@ this.logger.error('Operation failed', error);
 We follow [Conventional Commits](https://www.conventionalcommits.org/):
 
 ### Format
-```
+
+```text
 <type>(<scope>): <subject>
 
 <body>
@@ -205,6 +212,7 @@ We follow [Conventional Commits](https://www.conventionalcommits.org/):
 ```
 
 ### Types
+
 - `feat`: New feature
 - `fix`: Bug fix
 - `docs`: Documentation only changes
@@ -341,17 +349,19 @@ All public APIs must have JSDoc comments:
 ### Wiki Documentation
 
 When adding new features:
+
 1. Update relevant wiki pages
 2. Add examples to the examples directory
 3. Update the API Reference
 
 ## Questions?
 
-Feel free to open an issue with the `question` label or contact us at team@boltdriverapi.com.
+Feel free to open an issue with the `question` label or contact us at <team@boltdriverapi.com>.
 
 ## Recognition
 
 Contributors will be recognized in:
+
 - The project README
 - Release notes
 - Our website (with permission)

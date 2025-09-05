@@ -35,6 +35,9 @@ import {
   DatabaseError,
   InvalidSmsCodeError,
   NotAuthorizedError,
+  OrderHandle,
+  RideDetails,
+  OrderHistoryData,
 } from "./types";
 import { FileTokenStorage } from "./TokenStorage";
 import { Logger } from "./Logger";
@@ -485,8 +488,8 @@ export class BoltDriverAPI {
       const errorMessage =
         error instanceof Error ? error.message : "Unknown error";
       const statusCode =
-        (error as any)?.statusCode || (error as any)?.response?.status || 500;
-      const responseData = (error as any)?.response?.data || "";
+        (error as unknown as { statusCode?: number })?.statusCode || (error as unknown as { response?: { status?: number }})?.response?.status || 500;
+      const responseData = (error as unknown as { response?: { data?: unknown }})?.response?.data || "";
 
       // Check for specific error codes and throw appropriate error types
       if (axios.isAxiosError(error) && error.response?.data?.code) {
@@ -895,6 +898,7 @@ export class BoltDriverAPI {
               age: 30,
               bearingAccuracyDeg: 0,
               speedAccuracyMps: 1.8,
+              gps_speed_accuracy: 1,
             };
 
             await this.exchangeRefreshTokenForJWT(gpsInfo);
@@ -945,19 +949,88 @@ export class BoltDriverAPI {
   }
 
   /**
-   * Get the current refresh token
-   * @returns The current refresh token or undefined if not set
+   * Get driver information extracted from the JWT token
+   * @returns Driver information object or undefined if not available
    */
-  getCurrentRefreshToken(): string | undefined {
-    return this.refreshToken;
+  getDriverInfo():
+    | {
+        driverId: number;
+        partnerId: number;
+        companyId: number;
+        companyCityId: number;
+      }
+    | undefined {
+    return this.driverInfo;
   }
 
   /**
-   * Get the current access token
-   * @returns The current access token or undefined if not set
+   * Get driver order history (alias for getOrderHistoryPaginated)
+   * @param gpsInfo - GPS location and accuracy information
+   * @param limit - Number of records to retrieve (default: 10)
+   * @param offset - Offset for pagination (default: 0)
+   * @returns Promise resolving to order history data
+   * @throws {BoltApiError} When API request fails
    */
-  getCurrentAccessToken(): string | undefined {
-    return this.accessToken;
+  async getOrderHistory(
+    gpsInfo: GpsInfo,
+    limit: number = 10,
+    offset: number = 0
+  ): Promise<ApiResponse<OrderHistoryData>> {
+    return this.getOrderHistoryPaginated(gpsInfo, limit, offset);
+  }
+
+  /**
+   * Get ride details for a specific order handle
+   * @param gpsInfo - GPS location and accuracy information
+   * @param orderHandle - The handle of the order to retrieve details for
+   * @returns Promise resolving to ride details data
+   * @throws {BoltApiError} When API request fails
+   */
+  async getRideDetails(
+    gpsInfo: GpsInfo,
+    orderHandle: OrderHandle
+  ): Promise<RideDetails> {
+    // Ensure token is valid before making the request
+    await this.ensureValidToken();
+
+    const url = `${this.config.driverBaseUrl}/getOrderDetails`;
+    const params = this.buildRequestParams(gpsInfo);
+    params.order_id = orderHandle.orderId;
+
+    if (this.logger.getConfig().level === "debug") {
+      this.logger.info("Getting ride details", { orderHandle, gpsInfo });
+    } else {
+      this.logger.info(`Getting ride details for order: ${orderHandle.orderId}`);
+    }
+
+    try {
+      const response = await this.client.get(url, { params });
+
+      // If response is a network error or undefined
+      if (!response || !response.data) {
+        throw new Error("Network Error");
+      }
+
+      return this.parseApiResponse<RideDetails>(response);
+    } catch (error) {
+      this.logger.error("Failed to get ride details", error);
+
+      // If it's a network error, throw the original error message
+      if (error instanceof Error && error.message === "Network Error") {
+        throw new BoltApiError("Network Error", 0);
+      }
+
+      if (error instanceof BoltApiError) {
+        throw error;
+      }
+
+      throw new BoltApiError(
+        `Failed to get ride details: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`,
+        0
+      );
+    }
   }
 
   /**
@@ -1010,6 +1083,7 @@ export class BoltDriverAPI {
         adjustedBearing: 0,
         bearingAccuracyDeg: 0,
         speedAccuracyMps: 1.8,
+        gps_speed_accuracy: 1,
       };
 
       const result = await this.getDriverState(gpsInfo, "background");
@@ -1595,7 +1669,7 @@ export class BoltDriverAPI {
 
     try {
       this.logger.info("Getting driver phone details", { gpsInfo });
-      const response = await this.client.post<ApiResponse<any>>(url, data, {
+      const response = await this.client.post<ApiResponse<Record<string, unknown>>>(url, data, {
         params,
       });
       return response.data;
@@ -1656,8 +1730,13 @@ export class BoltDriverAPI {
     const params = this.buildRequestParams(gpsInfo);
     params.event = event;
 
-    try {
+    if (this.logger.getConfig().level === "debug") {
       this.logger.info("Getting modal information", { event, gpsInfo });
+    } else {
+      this.logger.info("Getting modal information");
+    }
+
+    try {
       const response = await this.client.get(url, { params });
       return this.parseApiResponse<ModalInfo>(response);
     } catch (error) {
@@ -1793,22 +1872,22 @@ export class BoltDriverAPI {
 
     // Handle direct data format (data is the actual response, potentially with some defaultable fields)
     if (typeof response.data === "object" && response.data !== null) {
-      const directData = response.data as any; // Use any temporarily for flexible property access
+      const directData = response.data as T; // Use T directly now
       // Ensure items is always an array if it exists
       if (
-        directData.items !== undefined &&
-        !Array.isArray(directData.items)
+        (directData as unknown as { items?: unknown }).items !== undefined && // Use unknown for optional property access on T
+        !Array.isArray((directData as unknown as { items?: unknown }).items)
       ) {
         this.logger.warn("Items is not an array, converting to empty array", {
-          items: directData.items,
+          items: (directData as unknown as { items?: unknown }).items,
         });
-        directData.items = [];
+        (directData as unknown as { items: unknown[] }).items = [];
       }
 
       // Ensure pollIntervalSec has a default value if missing
-      if (directData.pollIntervalSec === undefined) {
+      if ((directData as unknown as { pollIntervalSec?: number }).pollIntervalSec === undefined) {
         this.logger.warn("pollIntervalSec is undefined, setting default value");
-        directData.pollIntervalSec = 30; // Default 30 seconds
+        (directData as unknown as { pollIntervalSec: number }).pollIntervalSec = 30; // Default 30 seconds
       }
 
       return directData as T;
@@ -1839,7 +1918,7 @@ export class BoltDriverAPI {
         finalDriverId: driverId,
       });
 
-    return {
+    const params: RequestParams = {
       brand: this.authConfig.brand,
       country: this.authConfig.country,
       deviceId: this.deviceInfo.deviceId,
@@ -1859,6 +1938,19 @@ export class BoltDriverAPI {
       theme: this.authConfig.theme,
       version: this.deviceInfo.appVersion,
     };
+
+    // Add optional properties from gpsInfo if they exist
+    if (gpsInfo?.speedAccuracyMps !== undefined) {
+      params.gps_speed_accuracy_mps = gpsInfo.speedAccuracyMps;
+    }
+    if (gpsInfo?.gps_speed_accuracy !== undefined) {
+      params.gps_speed_accuracy = gpsInfo.gps_speed_accuracy;
+    }
+    if (gpsInfo?.bearingAccuracyDeg !== undefined) {
+      params.gps_bearing_accuracy_deg = gpsInfo.bearingAccuracyDeg;
+    }
+
+    return params;
   }
 
   /**
@@ -2212,7 +2304,7 @@ export class BoltDriverAPI {
     params.group_by = groupBy;
 
     if (this.logger.getConfig().level === "debug") {
-      this.logger.info("Getting activity rides", { groupBy, gpsInfo });
+      this.logger.debug("Getting activity rides", { groupBy, gpsInfo });
     } else {
       this.logger.info(`Getting activity rides (groupBy: ${groupBy})`);
     }
@@ -2259,7 +2351,7 @@ export class BoltDriverAPI {
     gpsInfo: GpsInfo,
     limit: number = 10,
     offset: number = 0
-  ): Promise<ApiResponse> {
+  ): Promise<ApiResponse<OrderHistoryData>> {
     // Ensure token is valid before making the request
     await this.ensureValidToken();
 
@@ -2631,6 +2723,7 @@ export class BoltDriverAPI {
       adjustedBearing: 0,
       bearingAccuracyDeg: 180,
       speedAccuracyMps: 1.808204567744442,
+      gps_speed_accuracy: 1,
     };
   }
 
@@ -2742,7 +2835,7 @@ export class BoltDriverAPI {
       }
 
       // Start with JWT-based information
-      const driverConfig: any = {
+      const driverConfig: Record<string, unknown> = {
         driver_info: {
           driver_id: this.driverInfo.driverId,
           partner_id: this.driverInfo.partnerId,
@@ -2814,20 +2907,5 @@ export class BoltDriverAPI {
         license_plate: "Not available via API",
       },
     };
-  }
-
-  /**
-   * Get driver information extracted from the JWT token
-   * @returns Driver information object or undefined if not available
-   */
-  getDriverInfo():
-    | {
-        driverId: number;
-        partnerId: number;
-        companyId: number;
-        companyCityId: number;
-      }
-    | undefined {
-    return this.driverInfo;
   }
 }

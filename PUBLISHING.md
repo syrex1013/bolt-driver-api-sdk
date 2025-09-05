@@ -153,6 +153,7 @@ Ensure your package includes only necessary files:
 ```
 
 The `dist/` folder should contain:
+
 - `index.js` - Main JavaScript file
 - `index.d.ts` - TypeScript declarations
 - `BoltDriverAPI.js` - Main class file
@@ -258,6 +259,7 @@ After successful publication:
 ### 1. Semantic Versioning
 
 Follow [semver.org](https://semver.org/) guidelines:
+
 - **MAJOR**: Breaking changes
 - **MINOR**: New features (backward compatible)
 - **PATCH**: Bug fixes (backward compatible)
@@ -308,6 +310,7 @@ Create detailed release notes for each version:
 ### 1. Package Analytics
 
 Monitor your package:
+
 - [NPM Package Page](https://www.npmjs.com/package/bolt-driver-api)
 - Download statistics
 - User feedback and issues
@@ -375,6 +378,6 @@ npm --version
 
 ---
 
-**Happy Publishing! 🚀**
+## Happy Publishing! 🚀
 
 Remember: Quality over quantity. Take your time to ensure each release is solid and well-tested.

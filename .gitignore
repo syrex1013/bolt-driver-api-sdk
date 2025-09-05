@@ -39,3 +39,7 @@ coverage/
 *.temp
 .cache/
 .example_requests
+.claude
+.kiro
+.bolt-token-enhanced.json
+.kiro/steering/structure.md

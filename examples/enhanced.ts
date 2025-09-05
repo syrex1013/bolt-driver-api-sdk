@@ -11,7 +11,8 @@ import {
   FileTokenStorage,
   LoggingConfig,
   GpsInfo,
-  Credentials
+  Credentials,
+  SmsLimitError
 } from '../src';
 
 interface UserInput {
@@ -19,7 +20,6 @@ interface UserInput {
   country: string;
   language: string;
   deviceType: string;
-  useRealCredentials: boolean;
   enableLogging: boolean;
   logToFile: boolean;
   smsCode?: string;
@@ -34,7 +34,7 @@ interface UserInput {
  * - Better driver information handling
  */
 
-async function enhancedExample() {
+export async function enhancedExample() {
   console.clear();
   console.log(boxen(chalk.blue.bold('🚀 Enhanced Bolt Driver API Example'), {
     padding: 1,
@@ -156,54 +156,55 @@ async function enhancedExample() {
 }
 
 async function performAuthentication(boltAPI: BoltDriverAPI, userInput: UserInput, spinner: any) {
-  // Step 1: Start authentication
-  spinner.start(`Sending SMS to ${userInput.phoneNumber}...`);
-  
+  const credentials: Credentials = {
+    driver_id: 'test_driver_id',
+    session_id: 'test_session_id',
+    phone: userInput.phoneNumber
+  };
+
+  const deviceInfo: DeviceInfo = {
+    deviceId: generateDeviceId(),
+    deviceType: userInput.deviceType as 'iphone' | 'android',
+    deviceName: userInput.deviceType === 'iphone' ? 'iPhone17,3' : 'Samsung Galaxy S24',
+    deviceOsVersion: userInput.deviceType === 'iphone' ? 'iOS18.6' : 'Android 14',
+    appVersion: 'DI.116.0'
+  };
+
+  const authConfig: AuthConfig = {
+    authMethod: 'phone',
+    brand: 'bolt',
+    country: userInput.country,
+    language: userInput.language,
+    theme: 'dark'
+  };
+
+  let authCompleted = false; 
+  let smsLimitReached = false;
+
   try {
-    // Create credentials object
-    const credentials: Credentials = {
-      driver_id: 'test_driver_id',
-      session_id: 'test_session_id',
-      phone: userInput.phoneNumber
-    };
-
-    // Create device info and auth config for this request
-    const deviceInfo: DeviceInfo = {
-      deviceId: generateDeviceId(),
-      deviceType: userInput.deviceType as 'iphone' | 'android',
-      deviceName: userInput.deviceType === 'iphone' ? 'iPhone17,3' : 'Samsung Galaxy S24',
-      deviceOsVersion: userInput.deviceType === 'iphone' ? 'iOS18.6' : 'Android 14',
-      appVersion: 'DI.116.0'
-    };
-
-    const authConfig: AuthConfig = {
-      authMethod: 'phone',
-      brand: 'bolt',
-      country: userInput.country,
-      language: userInput.language,
-      theme: 'dark'
-    };
-
+    spinner.start(`Sending SMS to ${userInput.phoneNumber}...`);
     const authResponse = await boltAPI.startAuthentication(authConfig, deviceInfo, credentials);
-    spinner.succeed(chalk.green('SMS sent successfully'));
-    
-    console.log(boxen(
-      `${chalk.yellow('📨 SMS Sent!')}\n\n` +
-      `${chalk.gray('Verification Token:')} ${authResponse.data?.verification_token?.substring(0, 30) || 'N/A'}...\n` +
-      `${chalk.gray('Code Channel:')} ${authResponse.data?.verification_code_channel || 'N/A'}\n` +
-      `${chalk.gray('Target:')} ${authResponse.data?.verification_code_target || 'N/A'}\n` +
-      `${chalk.gray('Code Length:')} ${authResponse.data?.verification_code_length || 'N/A'} digits\n` +
-      `${chalk.gray('Resend Wait:')} ${authResponse.data?.resend_wait_time_seconds || 'N/A'} seconds`,
-      { padding: 1, borderColor: 'yellow', borderStyle: 'round' }
-    ));
 
-    // Step 2: Get SMS code from user
-    let smsCode = '123456'; // Default demo code
-    if (userInput.useRealCredentials) {
-      const { code } = await inquirer.prompt([
+    if (authResponse.code === 299 && authResponse.message === 'SMS_LIMIT_REACHED') {
+      spinner.fail(chalk.yellow('SMS limit reached, attempting magic link authentication...'));
+      smsLimitReached = true; 
+    } else {
+      spinner.succeed(chalk.green('SMS sent successfully'));
+
+      console.log(boxen(
+        `${chalk.yellow('📨 SMS Sent!')}\n\n` +
+        `${chalk.gray('Verification Token:')} ${authResponse.data?.verification_token?.substring(0, 30) || 'N/A'}...\n` +
+        `${chalk.gray('Code Channel:')} ${authResponse.data?.verification_code_channel || 'N/A'}\n` +
+        `${chalk.gray('Target:')} ${authResponse.data?.verification_code_target || 'N/A'}\n` +
+        `${chalk.gray('Code Length:')} ${authResponse.data?.verification_code_length || 'N/A'} digits\n` +
+        `${chalk.gray('Resend Wait:')} ${authResponse.data?.resend_wait_time_seconds || 'N/A'} seconds`,
+        { padding: 1, borderColor: 'yellow', borderStyle: 'round' }
+      ));
+
+      const { smsCode } = await inquirer.prompt([
         {
           type: 'input',
-          name: 'code',
+          name: 'smsCode',
           message: chalk.cyan('Enter the SMS code you received:'),
           validate: (input: string) => {
             if (input.length === 6 && /^\d+$/.test(input)) {
@@ -213,35 +214,80 @@ async function performAuthentication(boltAPI: BoltDriverAPI, userInput: UserInpu
           }
         }
       ]);
-      smsCode = code;
-    } else {
-      console.log(chalk.yellow('\n💡 Using demo SMS code: 123456'));
+
+      spinner.start('Verifying SMS code...');
+      credentials.verification_code = smsCode; 
+      await boltAPI.confirmAuthentication(authConfig, deviceInfo, credentials, smsCode);
+      authCompleted = true; 
     }
 
-    // Step 3: Confirm authentication
-    spinner.start('Verifying SMS code...');
+  } catch (error) {
+    if (error instanceof SmsLimitError || (error as any)?.code === 299) {
+      spinner.fail(chalk.yellow('SMS limit reached, attempting magic link authentication...'));
+      smsLimitReached = true; 
+    } else {
+      spinner.fail(chalk.red('Authentication failed'));
+      throw error; 
+    }
+  }
 
-    // Add SMS code to credentials before confirmation
-    credentials.verification_code = smsCode;
+  if (!authCompleted && smsLimitReached) {
+    try {
+      const { email } = await inquirer.prompt({
+        type: 'input',
+        name: 'email',
+        message: chalk.cyan('Enter your email for magic link authentication:'),
+        validate: (input: string) => {
+          if (input.includes('@') && input.includes('.')) {
+            return true;
+          }
+          return chalk.red('Please enter a valid email address');
+        }
+      });
 
-    const confirmResponse = await boltAPI.confirmAuthentication(authConfig, deviceInfo, credentials);
-    spinner.succeed(chalk.green('SMS code verified successfully'));
-    
+      spinner.start(`Sending magic link to ${email}...`);
+      await boltAPI.sendMagicLink(email);
+      spinner.succeed(chalk.green(`Magic link sent successfully to ${email}`));
+
+      const { magicLinkUrl } = await inquirer.prompt({
+        type: 'input',
+        name: 'magicLinkUrl',
+        message: chalk.cyan('Paste the magic link URL from your email:'),
+        validate: (input: string) => {
+          if (input.startsWith('http')) {
+            return true;
+          }
+          return chalk.red('Please enter a valid URL');
+        }
+      });
+
+      spinner.start('Extracting token from magic link and authenticating...');
+      const magicLinkToken = BoltDriverAPI.extractTokenFromMagicLink(magicLinkUrl);
+      await boltAPI.authenticateWithMagicLink(magicLinkToken, deviceInfo, createSampleGpsInfo());
+      spinner.succeed(chalk.green('Magic link authentication successful!'));
+      authCompleted = true; 
+
+    } catch (magicLinkError) {
+      spinner.fail(chalk.red('Magic link authentication failed'));
+      throw magicLinkError;
+    }
+  }
+
+  if (authCompleted) {
+    spinner.succeed(chalk.green('Authentication completed successfully!'));
+
     console.log(boxen(
       `${chalk.green('✅ Authentication Successful!')}\n\n` +
-      `${chalk.gray('Token Type:')} ${confirmResponse.data?.token?.token_type || 'bearer'}\n` +
-      `${chalk.gray('Access Token:')} ${confirmResponse.data?.token?.refresh_token?.substring(0, 30) || 'N/A'}...\n` +
+      `${chalk.gray('Token Type:')} ${boltAPI.getSessionInfo()?.tokenType || 'bearer'}\n` +
+      `${chalk.gray('Access Token:')} ${boltAPI.getSessionInfo()?.accessToken?.substring(0, 30) || 'N/A'}...\n` +
       `${chalk.gray('Token Saved:')} ${chalk.green('✅ Yes (will be reused next time)')}`,
       { padding: 1, borderColor: 'green', borderStyle: 'double' }
     ));
 
-    // Step 4: Demonstrate API methods
     const gpsInfo = createSampleGpsInfo();
     await demonstrateApiMethods(boltAPI, gpsInfo);
-
-  } catch (authError) {
-    spinner.fail(chalk.red('Authentication failed'));
-    throw authError;
+  } else {
+    throw new Error("Authentication process not completed.");
   }
 }
 
@@ -251,16 +297,13 @@ async function demonstrateApiMethods(boltAPI: BoltDriverAPI, gpsInfo: GpsInfo) {
   const spinner = ora('Testing API methods...').start();
   
   try {
-    // Test various API methods
     const methods = [
       { name: 'Driver State', method: () => boltAPI.getDriverState(gpsInfo) },
       { name: 'Home Screen', method: () => boltAPI.getDriverHomeScreen(gpsInfo) },
       { name: 'Working Time', method: () => boltAPI.getWorkingTimeInfo(gpsInfo) },
       { name: 'Dispatch Preferences', method: () => boltAPI.getDispatchPreferences(gpsInfo) },
       { name: 'Navigation Badges', method: () => boltAPI.getDriverNavBarBadges(gpsInfo) },
-      { name: 'Emergency Assist', method: () => boltAPI.getEmergencyAssistProvider(gpsInfo) },
       { name: 'Other Drivers', method: () => boltAPI.getOtherActiveDrivers(gpsInfo) },
-      { name: 'Modal Info', method: () => boltAPI.getModal(gpsInfo) }
     ];
 
     const results: Array<{ name: string; status: string; data?: any; error?: string }> = [];
@@ -275,7 +318,6 @@ async function demonstrateApiMethods(boltAPI: BoltDriverAPI, gpsInfo: GpsInfo) {
 
     spinner.succeed(chalk.green('API methods tested'));
 
-    // Display results
     console.log(chalk.cyan('\n📊 API Method Results:'));
     results.forEach(({ name, status, data, error }) => {
       if (status === '✅ Success') {
@@ -291,7 +333,6 @@ async function demonstrateApiMethods(boltAPI: BoltDriverAPI, gpsInfo: GpsInfo) {
       }
     });
 
-    // Show logging status
     const logger = boltAPI.getLogger();
     const logConfig = logger.getConfig();
     
@@ -313,18 +354,18 @@ async function demonstrateApiMethods(boltAPI: BoltDriverAPI, gpsInfo: GpsInfo) {
 
 function createSampleGpsInfo(): GpsInfo {
   return {
-    latitude: 51.233186,
-    longitude: 22.518373,
-    accuracy: 19.791364,
-    bearing: 0,
-    speed: -1.000007,
+    latitude: 51.23325,
+    longitude: 22.518497,
+    accuracy: 17.331588,
+    bearing: 337.379444,
+    speed: 0.235321,
     timestamp: Math.floor(Date.now() / 1000),
-    age: 30.01,
-    // Add missing required properties
-    accuracyMeters: 19.791364,
+    age: 26.03,
+    accuracyMeters: 13.821502,
     adjustedBearing: 0,
-    bearingAccuracyDeg: 10,
-    speedAccuracyMps: 0.5
+    bearingAccuracyDeg: 180,
+    speedAccuracyMps: 1.808204567744442,
+    gps_speed_accuracy: 1,
   };
 }
 
@@ -386,12 +427,6 @@ async function getUserInput(): Promise<UserInput> {
         { name: '🤖 Android', value: 'android' }
       ],
       default: 'iphone'
-    },
-    {
-      type: 'confirm',
-      name: 'useRealCredentials',
-      message: 'Are you using real credentials? (Will prompt for SMS code)',
-      default: false
     },
     {
       type: 'confirm',

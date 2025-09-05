@@ -2,7 +2,7 @@
 
 ## Directory Layout
 
-```
+```text
 bolt-driver-api/
 ├── src/                    # Source code
 │   ├── BoltDriverAPI.ts   # Main API class
