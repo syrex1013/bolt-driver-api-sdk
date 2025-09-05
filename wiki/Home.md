@@ -1,52 +1,71 @@
-# Bolt Driver API SDK Wiki
+# Bolt Driver API SDK
 
-Welcome to the official Bolt Driver API SDK documentation. This wiki provides comprehensive information about using the SDK to integrate with Bolt's driver platform.
+Welcome to the official Bolt Driver API SDK documentation. This Node.js SDK allows you to communicate with Bolt's driver platform just like the mobile app.
 
-## 📚 Table of Contents
+## 🚀 Quick Start
 
-### Getting Started
-- [Installation Guide](Installation-Guide.md)
-- [Quick Start Tutorial](Quick-Start-Tutorial.md)
-- [Authentication Guide](Authentication-Guide.md)
-- [Configuration Options](Configuration-Options.md)
+```bash
+npm install bolt-driver-api
+```
 
-### Core Concepts
-- [Device Management](Device-Management.md)
-- [GPS and Location Services](GPS-Location-Services.md)
-- [Token Management](Token-Management.md)
-- [Error Handling](Error-Handling.md)
+```typescript
+import { BoltDriverAPI, FileTokenStorage } from 'bolt-driver-api';
 
-### Features
-- [Driver State Management](Driver-State-Management.md)
-- [Ride Management](Ride-Management.md)
-- [Earnings and Payments](Earnings-Payments.md)
-- [Navigation and Maps](Navigation-Maps.md)
-- [Support and Help](Support-Help.md)
+const api = new BoltDriverAPI(deviceInfo, authConfig);
+```
 
-### API Reference
-- [Complete API Reference](API-Reference.md)
-- [TypeScript Types](TypeScript-Types.md)
-- [Method Documentation](Method-Documentation.md)
-- [Response Formats](Response-Formats.md)
+## 📚 Documentation
 
-### Advanced Topics
-- [Custom Token Storage](Custom-Token-Storage.md)
-- [Logging and Debugging](Logging-Debugging.md)
-- [Rate Limiting](Rate-Limiting.md)
-- [Best Practices](Best-Practices.md)
+### Core Guides
+- **[Authentication Guide](Authentication-Guide)** - Complete authentication setup and flows
+- **[API Reference](API-Reference)** - Complete method and type documentation
+- **[Error Codes](Error-Codes)** - Error handling and troubleshooting
 
-### Examples
-- [Authentication Examples](Examples-Authentication.md)
-- [Ride Tracking Examples](Examples-Ride-Tracking.md)
-- [Earnings Examples](Examples-Earnings.md)
-- [Real-world Use Cases](Real-World-Use-Cases.md)
+### Key Features
+- 🔐 **SMS & Magic Link Authentication** - Multiple authentication methods
+- 📱 **Device Management** - iOS and Android device support
+- 🗺️ **GPS Integration** - Real-time location tracking
+- 💰 **Earnings & Analytics** - Driver earnings and performance data
+- 🚗 **Ride Management** - Complete ride lifecycle management
+- 📊 **Real-time Updates** - Live driver state and ride updates
 
-### Troubleshooting
-- [Common Issues](Common-Issues.md)
-- [Error Codes Reference](Error-Codes.md)
-- [FAQ](FAQ.md)
+## 🛠️ Installation
 
-## 🚀 Quick Links
+```bash
+npm install bolt-driver-api
+```
+
+## 📖 Basic Usage
+
+```typescript
+import { BoltDriverAPI, FileTokenStorage, DeviceInfo, AuthConfig } from 'bolt-driver-api';
+
+// Device information
+const deviceInfo: DeviceInfo = {
+  deviceId: 'your-device-id',
+  deviceType: 'iphone',
+  deviceName: 'iPhone 15 Pro',
+  deviceOsVersion: 'iOS 17.0',
+  appVersion: '1.0.0'
+};
+
+// Authentication configuration
+const authConfig: AuthConfig = {
+  authMethod: 'phone',
+  brand: 'bolt',
+  country: 'pl',
+  language: 'en-GB',
+  theme: 'dark'
+};
+
+// Initialize API
+const api = new BoltDriverAPI(deviceInfo, authConfig);
+
+// Start authentication
+const authResponse = await api.startAuthentication(authConfig, deviceInfo, credentials);
+```
+
+## 🔗 Links
 
 - **NPM Package**: [bolt-driver-api](https://www.npmjs.com/package/bolt-driver-api)
 - **GitHub Repository**: [bolt-driver-api-sdk](https://github.com/syrex1013/bolt-driver-api-sdk)
@@ -55,8 +74,12 @@ Welcome to the official Bolt Driver API SDK documentation. This wiki provides co
 
 ## 🤝 Contributing
 
-We welcome contributions to both the SDK and this documentation. Please see our [Contributing Guide](https://github.com/syrex1013/bolt-driver-api-sdk/blob/main/CONTRIBUTING.md) for details.
+We welcome contributions! Please see our [Contributing Guide](https://github.com/syrex1013/bolt-driver-api-sdk/blob/main/CONTRIBUTING.md) for details.
 
 ## 📄 License
 
-This SDK is licensed under the MIT License. See [LICENSE](https://github.com/syrex1013/bolt-driver-api-sdk/blob/main/LICENSE) for details.
+MIT License - see [LICENSE](https://github.com/syrex1013/bolt-driver-api-sdk/blob/main/LICENSE) for details.
+
+---
+
+**Need help?** Check out our [Authentication Guide](Authentication-Guide) or [API Reference](API-Reference) for detailed documentation.
