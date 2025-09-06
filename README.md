@@ -538,10 +538,13 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 For support, please open an issue in the [GitHub repository](https://github.com/syrex1013/bolt-driver-api-sdk/issues) or contact us at <remix3030303@hotmail.com>.
 
----
+## About the author & sponsorship
 
-<p align="center">
+This SDK was built by **Adrian Dacka** as a solo reverse-engineering effort of the Bolt Driver app to document and expose the underlying APIs for developers and researchers. I'm not affiliated with Bolt — this project is for educational and development purposes only. Use responsibly.
 
-Made with ❤️ by the Bolt Driver API Team
+If you'd like to support my individual work (no team), please click the **Sponsor** button on this repo or donate via your preferred platform — it helps me keep improving the project.
+[![Sponsor on GitHub](https://img.shields.io/badge/Sponsor-GitHub-181717?logo=github)](https://github.com/sponsors/YOUR-USERNAME)
+[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-Donate-FF813F?logo=buy-me-a-coffee)](https://www.buymeacoffee.com/YOUR-USERNAME)
+
 
 </p>
