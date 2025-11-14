@@ -550,3 +550,8 @@ If you'd like to support my individual work (no team), please click the **Sponso
 </p>
 
 <!-- GitAds-Verify: ODOZNFPWXDDXS3ID7VO53P38MMXTKMZK -->
+
+## GitAds Sponsored
+[![Sponsored by GitAds](https://gitads.dev/v1/ad-serve?source=syrex1013/bolt-driver-api-sdk@github)](https://gitads.dev/v1/ad-track?source=syrex1013/bolt-driver-api-sdk@github)
+
+
